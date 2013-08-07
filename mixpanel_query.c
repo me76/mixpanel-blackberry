@@ -41,9 +41,11 @@ static size_t write_to_resultbuffer(char *ptr, size_t size, size_t nmemb, void *
     if (results->failed) {
         return 0;
     }
-    // Reviewers - could this overflow (assuming it actually represents the
-    // size of non-overlapping memory pointed to by *ptr)?
     size_t new_length = results->length + size * nmemb;
+    if (new_length < results->length) { // OVERFLOW
+        results->failed = true;
+        return 0;
+    }
     if (new_length > MAX_RESULT_LENGTH) {
         results->failed = true;
         return 0;
