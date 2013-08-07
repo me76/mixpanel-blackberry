@@ -32,6 +32,7 @@ bool Mixpanel::init() {
 }
 
 void Mixpanel::cleanup() {
+	s_thread->flush(); // TODO CAN'T LIVE HERE. WE HAVE TO WAIT
 	mixpanel_query_cleanup();
 	if (NULL != s_thread) {
 		delete s_thread;
@@ -39,16 +40,16 @@ void Mixpanel::cleanup() {
 	}
 }
 
-Mixpanel::Mixpanel() {}
-
-Mixpanel::~Mixpanel() {
-	// TODO Auto-generated destructor stub
+Mixpanel::Mixpanel(QString token) {
+	m_token = token;
 }
 
-bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
+Mixpanel::~Mixpanel() {}
+
+bool Mixpanel::track(QString event_name, QVariantMap properties) {
 	QVariantMap default_properties = getDefaultProperties();
 	QVariantMap use_properties = properties;
-	use_properties.unite(default_properties);
+	use_properties.unite(default_properties); // TODO Backwards?
 	QVariantMap event;
 	event["event"] = event_name;
 	event["properties"] = use_properties;
@@ -62,13 +63,12 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
 		return false;
 	}
 	s_thread->message(MIXPANEL_ENDPOINT_EVENTS, json_buffer);
-	s_thread->flush(); // TODO CAN'T LIVE HERE.
 	return true;
 }
 
-QVariantMap Mixpanel::getDefaultProperties() { // TODO this is silly
+QVariantMap Mixpanel::getDefaultProperties() {
 	QVariantMap ret;
-	ret["token"] = QString("5d90aa5b938f233f2cea15d8b31bceb7");
+	ret["token"] = m_token;
 	ret["mp_lib"] = QString("blackberry sketch");
 	ret["$os"] = QString("Blackberry 10");
 	return ret;

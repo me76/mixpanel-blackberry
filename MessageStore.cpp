@@ -17,26 +17,16 @@
 namespace mixpanel {
 
 namespace details {
-// TODO static initialization dependency?
-// Particularly if MessageStore is a singleton anyhow...
-const QString MessageStore::READ_QUERY(
-		"SELECT _id, message FROM messages_v0 WHERE endpoint = :endpoint"
-		);
-const QString MessageStore::COUNT_QUERY(
-		"SELECT COUNT(*) FROM messages_v0 WHERE endpoint = :endpoint"
-		);
-const QString MessageStore::WRITE_QUERY(
-		"INSERT INTO messages_v0 (_id, endpoint, message, created_at)"
-		" VALUES (NULL, :endpoint, :message, :created_at)"
-		);
-const QString MessageStore::CLEAR_BY_TIME(
-		"DELETE FROM messages_v0 WHERE created_at <= :clear_time"
- 	 );
-const QString MessageStore::CLEAR_BY_ENDPOINT_ID(
-		"DELETE FROM messages_v0 WHERE _id <= :clear_id AND endpoint = :endpoint"
-	 );
 
-MessageStore::MessageStore() {
+MessageStore::MessageStore()
+	: READ_QUERY("SELECT _id, message FROM messages_v0 WHERE endpoint = :endpoint"),
+	  COUNT_QUERY("SELECT COUNT(*) FROM messages_v0 WHERE endpoint = :endpoint"),
+	  WRITE_QUERY(
+				"INSERT INTO messages_v0 (_id, endpoint, message, created_at)"
+				" VALUES (NULL, :endpoint, :message, :created_at)"
+				),
+	  CLEAR_BY_TIME("DELETE FROM messages_v0 WHERE created_at <= :clear_time"),
+	  CLEAR_BY_ENDPOINT_ID("DELETE FROM messages_v0 WHERE _id <= :clear_id AND endpoint = :endpoint") {
 	failed = false;
 }
 

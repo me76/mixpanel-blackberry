@@ -28,11 +28,11 @@ public:
     void deleteDb();
 
 private:
-    static const QString WRITE_QUERY;
-    static const QString READ_QUERY;
-    static const QString COUNT_QUERY;
-    static const QString CLEAR_BY_TIME;
-    static const QString CLEAR_BY_ENDPOINT_ID;
+    const QString READ_QUERY;
+    const QString COUNT_QUERY;
+    const QString WRITE_QUERY;
+    const QString CLEAR_BY_TIME;
+    const QString CLEAR_BY_ENDPOINT_ID;
     QSqlDatabase* getConnection();
     void initializeDatabase();
     void unconnect();

@@ -15,13 +15,14 @@ namespace mixpanel {
 
 class Mixpanel {
 public:
-	Mixpanel();
+	Mixpanel(QString token);
 	virtual ~Mixpanel();
-	virtual bool track(const QString &event_name, const QVariantMap &properties);
+	virtual bool track(QString event_name, QVariantMap properties);
 	static bool init();
 	static void cleanup();
 private:
 	QVariantMap getDefaultProperties();
+	QString m_token;
 	static details::MessageThread *s_thread;
 };
 
