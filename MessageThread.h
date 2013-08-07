@@ -18,22 +18,22 @@ namespace mixpanel {
 namespace details {
 
 class MessageThread: private QObject {
-	Q_OBJECT
+    Q_OBJECT
 public:
-	MessageThread();
-	virtual ~MessageThread();
+    MessageThread();
+    virtual ~MessageThread();
 public:
-	void message(enum mixpanel_endpoint endpoint, QString message);
-	void flush();
+    void message(enum mixpanel_endpoint endpoint, QString message);
+    void flush();
 signals:
-	void signalMessage(enum mixpanel_endpoint endpoint, QString message);
-	void signalFlush();
+    void signalMessage(enum mixpanel_endpoint endpoint, QString message);
+    void signalFlush();
 private slots:
-	void threadStarted();
-	void threadFinished();
+    void threadStarted();
+    void threadFinished();
 private:
-	QThread *m_thread;
-	MessageWorker *m_worker;
+    QThread *m_thread;
+    MessageWorker *m_worker;
 };
 
 } /* namespace details */
