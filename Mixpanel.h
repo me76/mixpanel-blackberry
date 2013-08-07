@@ -23,7 +23,7 @@ public:
 private:
 	QVariantMap getDefaultProperties();
 	QString m_token;
-	static details::MessageThread *s_thread;
+	static details::MessageThread s_thread;
 };
 
 } // namespace mixpanel

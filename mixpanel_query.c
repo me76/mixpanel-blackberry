@@ -32,7 +32,6 @@ static struct resultbuffer *create_resultbuffer() {
     ret->failed = false;
     ret->length = 0;
     ret->data = NULL;
-
     return ret;
 }
 

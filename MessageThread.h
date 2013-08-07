@@ -12,7 +12,6 @@
 #include <QObject>
 #include <QThread>
 #include <QMutex>
-#include <QWaitCondition>
 
 namespace mixpanel {
 namespace details {
@@ -32,8 +31,14 @@ private slots:
     void threadStarted();
     void threadFinished();
 private:
+    struct waiting_message {
+        enum mixpanel_endpoint endpoint;
+        QString message;
+    };
     QThread *m_thread;
-    MessageWorker *m_worker;
+    QList<waiting_message> m_waiting;
+    bool m_running;
+    QMutex m_running_mutex;
 };
 
 } /* namespace details */
