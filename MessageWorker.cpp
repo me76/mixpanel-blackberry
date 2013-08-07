@@ -30,7 +30,10 @@ void MessageWorker::message(enum mixpanel_endpoint endpoint, QString message) {
 	if (failed) {
 		return;
 	}
-	m_store.store(endpoint, message); // TODO return check?
+	if (!m_store.store(endpoint, message)) {
+		failed = true;
+		return;
+	}
 	int count = -1;
 	if (! m_store.count(endpoint, count)) {
 		failed = true;
@@ -61,7 +64,7 @@ void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
 	QUrl endpoint_url;
 	switch (endpoint) {
 	case MIXPANEL_ENDPOINT_EVENTS:
-		endpoint_url = QUrl("https://api.mixpanel.com/track"); // TODO hardcoded
+		endpoint_url = QUrl("https://api.mixpanel.com/track");
 		break;
 	case MIXPANEL_ENDPOINT_PEOPLE:
 		endpoint_url = QUrl("https://api.mixpanel.com/engage");
@@ -77,6 +80,8 @@ void MessageWorker::sendData(const QUrl &endpoint_url, const QString &json) {
 	QByteArray query_data_array("data=");
 	query_data_array.append(query_payload_escaped);
 	const char *url_str = endpoint_url.toString().toAscii();
+	// TODO since this is synchronous, check return value and don't clear the records
+	// unless you send them ok.
 	mixpanel_query(url_str, query_data_array);
 }
 
