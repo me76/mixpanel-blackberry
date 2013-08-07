@@ -24,9 +24,11 @@ public slots:
 	void flush();
 private:
 	void flushEndpoint(enum mixpanel_endpoint endpoint);
-	void sendData(const QUrl &endpoint_url, const QString &json);
+	void sendData(const char *endpoint_url, const QString &json);
 	MessageStore m_store;
 	bool failed;
+	static const char* EVENTS_ENDPOINT_URL;
+	static const char* PEOPLE_ENDPOINT_URL;
 };
 
 } /* namespace details */

@@ -66,85 +66,38 @@ static void destroy_resultbuffer(struct resultbuffer *r) {
     free(r);
 }
 
-struct requestinfo {
-    char *endpoint_url;
-    char *request_body;
-};
-
-// TODO what if we're given non-null terminated strings? The checks below
-static struct requestinfo *create_requestinfo(const char *endpoint_url, const char *request_body) {
-    if (endpoint_url == NULL) {
-        fprintf(stderr, "Cannot make a request to a null url\n");
-        return NULL;
+int mixpanel_query_init() {
+    // MUST be able to be called more than once.
+    if (curl_global_init(CURL_GLOBAL_ALL)) {
+        fprintf(stderr, "Couldn't initialize cURL library.\n");
+        return -1;
     }
-    size_t endpoint_url_length = strnlen(endpoint_url, MAX_URL_LENGTH + 1);
-    if (endpoint_url_length > MAX_URL_LENGTH) {
-        fprintf(stderr, "Cannot make a request ot a URL more than %d bytes long\n", MAX_URL_LENGTH);
-        return NULL;
-    }
-    if (request_body == NULL) {
-        fprintf(stderr, "Cannot post with a null request body\n");
-        return NULL;
-    }
-    size_t request_body_length = strnlen(request_body, MAX_REQUEST_BODY_LENGTH + 1);
-    if (request_body_length > MAX_REQUEST_BODY_LENGTH) {
-        fprintf(stderr, "Cannot make a request with body more than %d bytes long\n", MAX_REQUEST_BODY_LENGTH);
-        return NULL;
-    }
-    char *info_request_body = malloc(sizeof(char) * (request_body_length + 1));
-    if (info_request_body == NULL) {
-        fprintf(stderr, "Can't allocate memory for request body\n");
-        return NULL;
-    }
-    char *info_endpoint_url = malloc(sizeof(char) * (endpoint_url_length + 1));
-    if (info_endpoint_url == NULL) {
-        fprintf(stderr, "Can't allocate memory for request url\n");
-        free(info_request_body);
-        return NULL;
-    }
-    struct requestinfo *ret = malloc(sizeof(struct requestinfo));
-    if (ret == NULL) {
-        fprintf(stderr, "Can't allocaet memory for requestinfo\n");
-        free(info_request_body);
-        free(info_endpoint_url);
-        return NULL;
-    }
-
-    memcpy(info_request_body, request_body, request_body_length + 1);
-    memcpy(info_endpoint_url, endpoint_url, endpoint_url_length + 1);
-    ret->endpoint_url = info_endpoint_url;
-    ret->request_body = info_request_body;
-    return ret;
+    return 0;
 }
 
-static void destroy_requestinfo(struct requestinfo *r) {
-    free(r->endpoint_url);
-    free(r->request_body);
-    free(r);
+void mixpanel_query_cleanup() {
+    // MUST be able to be called more than once.
+    curl_global_cleanup();
 }
 
-// TODO move back to caller, get rid of requestinfo
-static void run_query_thread(void *requestinfo_ptr) {
-    struct requestinfo *requestinfo = (struct requestinfo *)requestinfo_ptr;
+void mixpanel_query(const char *endpoint_url, const char *request_body){
     CURL *curl;
     CURLcode err;
     struct resultbuffer *resultbuffer = create_resultbuffer();
     if (NULL == resultbuffer) {
         fprintf(stderr, "Couldn't allocate space for results.\n");
-        destroy_requestinfo(requestinfo);
         return;
     }
     curl = curl_easy_init();
     if (NULL == curl) {
         fprintf(stderr, "Couldn't allocate cURL\n");
         destroy_resultbuffer(resultbuffer);
-        destroy_requestinfo(requestinfo);
         return;
     }
     curl_easy_setopt(curl, CURLOPT_VERBOSE, 1); // TODO remove
     if ((err = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)) ||
-        (err = curl_easy_setopt(curl, CURLOPT_URL, requestinfo->endpoint_url)) ||
-        (err = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, requestinfo->request_body)) ||
+        (err = curl_easy_setopt(curl, CURLOPT_URL, endpoint_url)) ||
+        (err = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_body)) ||
         (err = curl_easy_setopt(curl, CURLOPT_WRITEDATA, resultbuffer)) ||
         (err = curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback))) {
         fprintf(stderr, "Couldn't configure libcurl: %s\n", curl_easy_strerror(err));
@@ -167,26 +120,7 @@ static void run_query_thread(void *requestinfo_ptr) {
     CLEANUP:
     curl_easy_cleanup(curl);
     destroy_resultbuffer(resultbuffer);
-    destroy_requestinfo(requestinfo);
 
     return;
 }
 
-int mixpanel_query_init() {
-    // MUST be able to be called more than once.
-    if (curl_global_init(CURL_GLOBAL_ALL)) {
-        fprintf(stderr, "Couldn't initialize cURL library.\n");
-        return -1;
-    }
-    return 0;
-}
-
-void mixpanel_query_cleanup() {
-    // MUST be able to be called more than once.
-    curl_global_cleanup();
-}
-
-void mixpanel_query(const char *endpoint_url, const char *request_body){
-    struct requestinfo *request = create_requestinfo(endpoint_url, request_body);
-    run_query_thread(request);
-}
