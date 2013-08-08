@@ -23,9 +23,7 @@ namespace details {
 
 MessageStore::MessageStore() {}
 
-MessageStore::~MessageStore() {
-    unconnect();
-}
+MessageStore::~MessageStore() {}
 
 bool MessageStore::deleteDb() {
     unconnect();

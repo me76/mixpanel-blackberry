@@ -20,8 +20,6 @@ namespace mixpanel {
 
 using namespace bb::data;
 
-details::MessageThread Mixpanel::s_thread;
-
 struct initialization {
     initialization() {
         mixpanel_query_init();
@@ -32,6 +30,8 @@ struct initialization {
 };
 
 static initialization init;
+
+details::MessageThread Mixpanel::s_thread;
 
 Mixpanel::Mixpanel(QString token)
    : m_token(token) {
