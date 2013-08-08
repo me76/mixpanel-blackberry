@@ -33,7 +33,7 @@ static initialization init;
 
 details::MessageThread Mixpanel::s_thread;
 
-Mixpanel::Mixpanel(QString token)
+Mixpanel::Mixpanel(const QString &token)
    : m_token(token) {
 }
 

@@ -25,10 +25,8 @@ MessageThread::~MessageThread() {
     die_task.task_type = TASK_TYPE_DIE;
     die_task.endpoint = MIXPANEL_ENDPOINT_UNDEFINED;
     die_task.message = empty_string;
-    // TODO ! by this point, anything on the queue is probably
-    // dead, since stuff in our SQL library or system library
-    // may already have been destructed.
     QMutexLocker lock(&m_queue_mutex);
+    m_queue.clear(); // These messages are already dead, since our storage and network stuff may be gone.
     m_queue.append(die_task);
     m_wait_condition.wakeOne();
     lock.unlock();
@@ -59,10 +57,10 @@ void MessageThread::flush() {
 void MessageThread::run() {
 	MessageWorker worker;
     struct task next_task;
-    while (TASK_TYPE_DIE != next_task.task_type) {
+    for (;;) {
         QMutexLocker lock(&m_queue_mutex);
         while (m_queue.isEmpty()) {
-            m_wait_condition.wait(&m_queue_mutex); // TODO timeout?
+            m_wait_condition.wait(&m_queue_mutex);
         }
         next_task = m_queue.dequeue();
         lock.unlock();
@@ -76,6 +74,8 @@ void MessageThread::run() {
         case TASK_TYPE_DIE:
             return;
         }
+
+        // The event loop hack- we need
     }
 }
 

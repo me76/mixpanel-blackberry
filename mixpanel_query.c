@@ -55,7 +55,6 @@ int mixpanel_query(const char *endpoint_url, const char *request_body){
         returncode = -1;
         goto cleanup;
     }
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1); // TODO remove
     if ((err = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)) ||
         (err = curl_easy_setopt(curl, CURLOPT_URL, endpoint_url)) ||
         (err = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_body)) ||
