@@ -9,20 +9,17 @@ LIBS += -lcurl
 
 - Drop the "mixpanel" directory into your applications src/ directory
 
-- Add the following code to the main function of your application:
+Then you can instantiate instances of the Mixpanel class and track events with:
 
 #include "mixpanel/Mixpanel.h"
 
-Q_DECL_EXPORT int main(int argc, char **argv) {
-    // Call this as early as possible in your main function.
-	mixpanel::Mixpanel::init();
-	
-	// Your main code goes here, including your
-	// program's event loop...
-	
-	// Call this as late as possible in your application,
-	// right before your main function returns.
-    mixpanel::Mixpanel::cleanup();
-    
-    return ret;
-}
+...
+
+Mixpanel tracker("YOUR PROJECT TOKEN");
+QVariantMap event_properties;
+tracker.track("My Event", event_properties);
+
+The Mixpanel methods are reentrant - it's safe to have multiple instances of Mixpanel,
+and use each of them from their own thread. It is *not* guaranteed that you can use
+the same instance of Mixpanel from multiple threads safely.
+

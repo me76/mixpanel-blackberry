@@ -40,7 +40,11 @@ Mixpanel::Mixpanel(const QString &token)
 Mixpanel::~Mixpanel() {}
 
 bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
-    QVariantMap default_properties = getDefaultProperties();
+    // Must be reentrant
+    QVariantMap default_properties;
+    default_properties["token"] = m_token;
+    default_properties["mp_lib"] = QString("blackberry sketch");
+    default_properties["$os"] = QString("Blackberry QNX");
     default_properties["time"] = time(NULL);
     QVariantMap use_properties = properties;
     use_properties.unite(default_properties);
@@ -59,17 +63,9 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     return true;
 }
 
-bool Mixpanel::flush() {
+void Mixpanel::flush() {
+    // Must be reentrant
     s_thread.flush();
-}
-
-QVariantMap Mixpanel::getDefaultProperties() { // TODO use a static map
-    QVariantMap ret;
-    ret["token"] = m_token;
-    ret["mp_lib"] = QString("blackberry sketch");
-    ret["$os"] = QString("Blackberry QNX");
-
-    return ret;
 }
 
 } // namespace mixpanel

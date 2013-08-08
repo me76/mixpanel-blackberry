@@ -33,6 +33,7 @@ MessageThread::~MessageThread() {
     this->wait();
 }
 
+// Called from client threads, must be thread-safe
 void MessageThread::message(enum mixpanel_endpoint endpoint, const QString &message) {
     struct task next_task;
     next_task.task_type = TASK_TYPE_MESSAGE;
@@ -43,6 +44,7 @@ void MessageThread::message(enum mixpanel_endpoint endpoint, const QString &mess
     m_wait_condition.wakeOne();
 }
 
+// Called from client threads, must be thread-safe
 void MessageThread::flush() {
     static QString empty_string;
     struct task next_task;
