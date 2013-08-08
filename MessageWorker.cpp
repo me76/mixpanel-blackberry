@@ -9,7 +9,11 @@ extern "C" {
 #include "mixpanel_query.h"
 }
 #include "MessageWorker.h"
+
+#include <time.h>
+
 #include <iostream>
+#include <ctime>
 
 #define STORE_RECORDS_MAX 40
 
@@ -22,6 +26,10 @@ const char* MessageWorker::PEOPLE_ENDPOINT_URL = "https://api.mixpanel.com/engag
 
 MessageWorker::MessageWorker()
     : QObject(0), m_store() {
+    std::time_t overdue = time(NULL) - (60 * 60 * 24 * 5); // Five days
+    if (overdue > 0) { // account for screwy system clocks
+        m_store.clearMessagesUptoTime(overdue);
+    }
 }
 
 MessageWorker::~MessageWorker() {}

@@ -14,7 +14,7 @@ namespace mixpanel {
 namespace details {
 
 MessageThread::MessageThread()
-    : QThread(), m_worker(), m_queue(), m_queue_mutex() {
+    : QThread(), m_queue(), m_queue_mutex() {
     setObjectName(QString("MixpanelMessageThread_InternalThread"));
     start();
 }
@@ -25,6 +25,9 @@ MessageThread::~MessageThread() {
     die_task.task_type = TASK_TYPE_DIE;
     die_task.endpoint = MIXPANEL_ENDPOINT_UNDEFINED;
     die_task.message = empty_string;
+    // TODO ! by this point, anything on the queue is probably
+    // dead, since stuff in our SQL library or system library
+    // may already have been destructed.
     QMutexLocker lock(&m_queue_mutex);
     m_queue.append(die_task);
     m_wait_condition.wakeOne();
@@ -54,6 +57,7 @@ void MessageThread::flush() {
 }
 
 void MessageThread::run() {
+	MessageWorker worker;
     struct task next_task;
     while (TASK_TYPE_DIE != next_task.task_type) {
         QMutexLocker lock(&m_queue_mutex);
@@ -64,13 +68,12 @@ void MessageThread::run() {
         lock.unlock();
         switch (next_task.task_type) {
         case TASK_TYPE_MESSAGE:
-            m_worker.message(next_task.endpoint, next_task.message);
+            worker.message(next_task.endpoint, next_task.message);
             break;
         case TASK_TYPE_FLUSH:
-            m_worker.flush();
+            worker.flush();
             break;
         case TASK_TYPE_DIE:
-            m_worker.flush();
             return;
         }
     }

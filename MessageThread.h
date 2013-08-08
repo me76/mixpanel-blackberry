@@ -42,7 +42,6 @@ private:
         enum mixpanel_endpoint endpoint;
         QString message;
     };
-    MessageWorker m_worker;
     QQueue<struct task> m_queue;
     QMutex m_queue_mutex;
     QWaitCondition m_wait_condition;
