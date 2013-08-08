@@ -32,7 +32,7 @@ struct initialization {
 static initialization init;
 
 details::MessageThread Mixpanel::s_thread;
-details::SuperProperties Mixpanel::s_superproperties;
+details::Preferences Mixpanel::s_preferences;
 
 const char Mixpanel::VERSION[] = "0.0.1pre";
 
@@ -44,7 +44,7 @@ Mixpanel::~Mixpanel() {}
 
 bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     // Must be reentrant
-    QVariantMap default_properties = s_superproperties.get();
+    QVariantMap default_properties = s_preferences.getSuperProperties();
     default_properties["token"] = m_token;
     default_properties["time"] = time(NULL);
     default_properties["mp_lib"] = QString("blackberry");
@@ -74,7 +74,12 @@ void Mixpanel::flush() {
 
 void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value) {
 	// Must be reentrant
-	s_superproperties.set(name, value);
+	s_preferences.setSuperProperty(name, value);
+}
+
+void Mixpanel::identify(const QString &distinct_id) {
+	// Must be reentrant
+	s_preferences.setDistinctId(distinct_id);
 }
 
 } // namespace mixpanel

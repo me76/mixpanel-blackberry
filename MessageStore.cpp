@@ -12,8 +12,6 @@
 #include <QFile>
 #include <QTime>
 
-// TODO Find QTSingleton or what have you, ALL of these should be singletons except for Mixpanel;
-
 #define DATABASE_PATH "data/mixpanel_messages.db"
 #define DATABASE_DRIVER "QSQLITE"
 #define DATABASE_CONNECTION_NAME "mixpanel_messages_connection"

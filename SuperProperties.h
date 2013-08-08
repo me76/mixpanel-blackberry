@@ -15,15 +15,18 @@
 namespace mixpanel {
 namespace details {
 
-class SuperProperties {
+class Preferences {
 public:
-	SuperProperties();
-	virtual ~SuperProperties();
-	QVariantMap get();
-	void set(const QString &name, const QVariant &value);
+	Preferences();
+	virtual ~Preferences();
+	QVariantMap getSuperProperties();
+	void setSuperProperty(const QString &name, const QVariant &value);
+	QString getDistinctId();
+	void setDistinctId(const QString &distinct_id);
 private:
 	QSettings m_settings;
-	QVariantMap m_props;
+	QVariantMap m_superproperties;
+	QString m_distinct_id;
 	QReadWriteLock m_props_lock;
 };
 
