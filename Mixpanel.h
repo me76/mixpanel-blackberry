@@ -18,6 +18,7 @@ public:
     Mixpanel(const QString &token);
     virtual ~Mixpanel();
     virtual bool track(const QString &event_name, const QVariantMap &properties);
+    virtual bool flush();
 private:
     Mixpanel(const Mixpanel&);
     Mixpanel& operator=(const Mixpanel&);

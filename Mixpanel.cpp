@@ -59,6 +59,10 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     return true;
 }
 
+bool Mixpanel::flush() {
+    s_thread.flush();
+}
+
 QVariantMap Mixpanel::getDefaultProperties() { // TODO use a static map
     QVariantMap ret;
     ret["token"] = m_token;
