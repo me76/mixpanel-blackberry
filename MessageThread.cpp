@@ -70,6 +70,7 @@ void MessageThread::run() {
             m_worker.flush();
             break;
         case TASK_TYPE_DIE:
+            m_worker.flush();
             return;
         }
     }
