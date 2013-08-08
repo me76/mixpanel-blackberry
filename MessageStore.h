@@ -23,7 +23,7 @@ public:
     MessageStore();
     virtual ~MessageStore();
     bool store(enum mixpanel_endpoint endpoint, const QString &message);
-    bool retrieve(enum mixpanel_endpoint endpoint, QList<QString> *results, int *last_id);
+    bool retrieve(enum mixpanel_endpoint endpoint, int limit, QList<QString> *results, int *last_id);
     bool count(enum mixpanel_endpoint endpoint, int *count);
     bool clearMessagesUptoId(enum mixpanel_endpoint endpoint, int id);
     bool clearMessagesUptoTime(std::time_t time);

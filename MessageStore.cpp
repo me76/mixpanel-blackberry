@@ -64,17 +64,18 @@ bool MessageStore::store(enum mixpanel_endpoint endpoint, const QString &message
     return true;
 }
 
-bool MessageStore::retrieve(enum mixpanel_endpoint endpoint, QList<QString> *results, int *last_id) {
+bool MessageStore::retrieve(enum mixpanel_endpoint endpoint, int limit, QList<QString> *results, int *last_id) {
     QSqlDatabase *db = getConnection();
     if (NULL == db) {
         return false;
     }
     QSqlQuery query(*db);
-    if (! query.prepare("SELECT _id, message FROM messages_v0 WHERE endpoint = :endpoint")) {
-        unconnect();
-        return false;
-    }
+    query.prepare(
+        "SELECT _id, message FROM messages_v0 WHERE endpoint = :endpoint "
+        " ORDER BY _id ASC LIMIT :limit"
+    );
     query.bindValue(":endpoint", endpoint);
+    query.bindValue(":limit", limit); // TODO is this going to work?
     query.exec();
     const QSqlError err = query.lastError();
     if (err.isValid()) {

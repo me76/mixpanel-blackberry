@@ -55,30 +55,32 @@ void MessageWorker::flush() {
 void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
     QStringList retrieved;
     int last_id = -1;
-    if (! m_store.retrieve(endpoint, &retrieved, &last_id)) {
-        return;
-    }
-    if (retrieved.count() == 0) {
-        return;
-    }
-    QString json_payload;
-    json_payload = retrieved.join(",");
-    json_payload = json_payload.prepend("[");
-    json_payload = json_payload.append("]");
-    const char *endpoint_url;
-    switch (endpoint) {
-    case MIXPANEL_ENDPOINT_EVENTS: // TODO array index here.
-        endpoint_url = EVENTS_ENDPOINT_URL;
-        break;
-    case MIXPANEL_ENDPOINT_PEOPLE:
-        endpoint_url = PEOPLE_ENDPOINT_URL;
-        break;
-    case MIXPANEL_ENDPOINT_UNDEFINED:
-        return; // This means there is a programmer bug.
-    }
-    if (sendData(endpoint_url, json_payload)) {
-        m_store.clearMessagesUptoId(endpoint, last_id);
-    }
+    do {
+        if (! m_store.retrieve(endpoint, STORE_RECORDS_MAX, &retrieved, &last_id)) {
+            return;
+        }
+        if (retrieved.count() == 0) {
+            return;
+        }
+        QString json_payload;
+        json_payload = retrieved.join(",");
+        json_payload = json_payload.prepend("[");
+        json_payload = json_payload.append("]");
+        const char *endpoint_url;
+        switch (endpoint) {
+        case MIXPANEL_ENDPOINT_EVENTS: // TODO array index here.
+            endpoint_url = EVENTS_ENDPOINT_URL;
+            break;
+        case MIXPANEL_ENDPOINT_PEOPLE:
+            endpoint_url = PEOPLE_ENDPOINT_URL;
+            break;
+        case MIXPANEL_ENDPOINT_UNDEFINED:
+            return; // This means there is a programmer bug.
+        }
+        if (sendData(endpoint_url, json_payload)) {
+            m_store.clearMessagesUptoId(endpoint, last_id);
+        }
+    } while(retrieved.count() > 0);
 }
 
 bool MessageWorker::sendData(const char *endpoint_url, const QString &json) {
