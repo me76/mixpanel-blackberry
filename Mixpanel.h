@@ -9,6 +9,7 @@
 #define MIXPANEL_H_
 
 #include "MessageThread.h"
+#include "SuperProperties.h"
 #include <QVariantMap>
 
 namespace mixpanel {
@@ -36,10 +37,13 @@ public:
     virtual ~Mixpanel();
     virtual bool track(const QString &event_name, const QVariantMap &properties);
     virtual void flush();
+    virtual void registerSuperProperty(const QString &name, const QVariant &value);
+    static const char VERSION[];
 private:
     QVariantMap getDefaultProperties();
     const QString m_token;
     static details::MessageThread s_thread;
+    static details::SuperProperties s_superproperties;
 };
 
 } // namespace mixpanel
