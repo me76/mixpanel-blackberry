@@ -15,20 +15,21 @@ namespace mixpanel {
 namespace details {
 
 class MessageWorker: public QObject {
- 	Q_OBJECT
+     Q_OBJECT
 public:
-	MessageWorker();
-	virtual ~MessageWorker();
+    MessageWorker();
+    ~MessageWorker();
 public slots:
-	void message(enum mixpanel_endpoint endpoint, QString message);
-	void flush();
+    void message(enum mixpanel_endpoint endpoint, const QString &message);
+    void flush();
 private:
-	void flushEndpoint(enum mixpanel_endpoint endpoint);
-	void sendData(const char *endpoint_url, const QString &json);
-	MessageStore m_store;
-	bool failed;
-	static const char* EVENTS_ENDPOINT_URL;
-	static const char* PEOPLE_ENDPOINT_URL;
+    MessageWorker(const MessageWorker&);
+    MessageWorker& operator=(const MessageWorker&);
+    void flushEndpoint(enum mixpanel_endpoint endpoint);
+    bool sendData(const char *endpoint_url, const QString &json);
+    MessageStore m_store;
+    static const char* EVENTS_ENDPOINT_URL; // TODO move to endpoints.h
+    static const char* PEOPLE_ENDPOINT_URL;
 };
 
 } /* namespace details */

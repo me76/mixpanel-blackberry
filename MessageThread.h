@@ -9,6 +9,9 @@
 #define MESSAGETHREAD_H_
 
 #include "MessageWorker.h"
+
+#include <utility>
+
 #include <QObject>
 #include <QThread>
 #include <QMutex>
@@ -20,23 +23,23 @@ class MessageThread: private QObject {
     Q_OBJECT
 public:
     MessageThread();
-    virtual ~MessageThread();
+    ~MessageThread();
+
 public:
-    void message(enum mixpanel_endpoint endpoint, QString message);
+    void message(enum mixpanel_endpoint endpoint, const QString &message);
     void flush();
 signals:
-    void signalMessage(enum mixpanel_endpoint endpoint, QString message);
+    void signalMessage(enum mixpanel_endpoint endpoint, const QString &message);
     void signalFlush();
 private slots:
     void threadStarted();
-    void threadFinished();
+    void pushWaiting();
 private:
-    struct waiting_message {
-        enum mixpanel_endpoint endpoint;
-        QString message;
-    };
-    QThread *m_thread;
-    QList<waiting_message> m_waiting;
+    MessageThread(const MessageThread&);
+    MessageThread& operator=(const MessageThread&);
+    QThread m_thread;
+    MessageWorker m_worker;
+    QList< std::pair<enum mixpanel_endpoint, QString> > m_waiting;
     bool m_running;
     QMutex m_running_mutex;
 };

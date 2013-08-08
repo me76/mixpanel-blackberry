@@ -22,28 +22,28 @@ using namespace bb::data;
 
 details::MessageThread Mixpanel::s_thread;
 
-bool Mixpanel::init() {
-    if (mixpanel_query_init()) {
-        return false;
+struct initialization {
+    initialization() {
+        mixpanel_query_init();
     }
-    return true;
-}
+    ~initialization() {
+        mixpanel_query_cleanup();
+    }
+};
 
-void Mixpanel::cleanup() {
-    s_thread.flush();
-    mixpanel_query_cleanup();
-}
+static initialization init;
 
-Mixpanel::Mixpanel(QString token) {
-    m_token = token;
+Mixpanel::Mixpanel(QString token)
+   : m_token(token) {
 }
 
 Mixpanel::~Mixpanel() {}
 
-bool Mixpanel::track(QString event_name, QVariantMap properties) {
+bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     QVariantMap default_properties = getDefaultProperties();
+    default_properties["time"] = time(NULL);
     QVariantMap use_properties = properties;
-    use_properties.unite(default_properties); // TODO Backwards?
+    use_properties.unite(default_properties);
     QVariantMap event;
     event["event"] = event_name;
     event["properties"] = use_properties;
@@ -53,19 +53,18 @@ bool Mixpanel::track(QString event_name, QVariantMap properties) {
     if (jda.hasError()) {
         const DataAccessError err = jda.error();
         const QString err_message = err.errorMessage();
-        std::cerr << "Couldn't write properties as JSON\n";
         return false;
     }
     s_thread.message(MIXPANEL_ENDPOINT_EVENTS, json_buffer);
     return true;
 }
 
-QVariantMap Mixpanel::getDefaultProperties() {
+QVariantMap Mixpanel::getDefaultProperties() { // TODO use a static map
     QVariantMap ret;
     ret["token"] = m_token;
     ret["mp_lib"] = QString("blackberry sketch");
     ret["$os"] = QString("Blackberry QNX");
-    ret["time"] = time(NULL);
+
     return ret;
 }
 

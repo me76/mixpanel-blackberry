@@ -12,6 +12,8 @@
 #include <QFile>
 #include <QTime>
 
+// TODO Find QTSingleton or what have you, ALL of these should be singletons except for Mixpanel;
+
 #define DATABASE_PATH "data/mixpanel_messages.db"
 #define DATABASE_DRIVER "QSQLITE"
 #define DATABASE_CONNECTION_NAME "mixpanel_messages_connection"
@@ -19,31 +21,19 @@
 namespace mixpanel {
 namespace details {
 
-MessageStore::MessageStore()
-    : READ_QUERY("SELECT _id, message FROM messages_v0 WHERE endpoint = :endpoint"),
-      COUNT_QUERY("SELECT COUNT(*) FROM messages_v0 WHERE endpoint = :endpoint"),
-      WRITE_QUERY(
-                "INSERT INTO messages_v0 (_id, endpoint, message, created_at)"
-                " VALUES (NULL, :endpoint, :message, :created_at)"
-                ),
-      CLEAR_BY_TIME("DELETE FROM messages_v0 WHERE created_at <= :clear_time"),
-      CLEAR_BY_ENDPOINT_ID("DELETE FROM messages_v0 WHERE _id <= :clear_id AND endpoint = :endpoint") {
-    failed = false;
-}
+MessageStore::MessageStore() {}
 
 MessageStore::~MessageStore() {
     unconnect();
 }
 
-void MessageStore::deleteDb() {
+bool MessageStore::deleteDb() {
     unconnect();
     QFile db_file(DATABASE_PATH);
-    if (db_file.exists()) {
-        bool ok = db_file.remove();
-        if (! ok) {
-            std::cerr << "Couldn't remove the database!\n";
-        }
+    if (! db_file.exists()) {
+        return true; // if it never existed in the first place, then it's still deleted
     }
+    return db_file.remove();
 }
 
 void MessageStore::unconnect() {
@@ -60,7 +50,10 @@ bool MessageStore::store(enum mixpanel_endpoint endpoint, const QString &message
     }
     QDateTime now = QDateTime::currentDateTime();
     QSqlQuery query(*db);
-    query.prepare(WRITE_QUERY);
+    query.prepare(
+        "INSERT INTO messages_v0 (_id, endpoint, message, created_at) "
+        " VALUES (NULL, :endpoint, :message, :created_at)"
+    );
     query.bindValue(":endpoint", endpoint);
     query.bindValue(":message", message);
     query.bindValue(":created_at", now.toMSecsSinceEpoch());
@@ -68,21 +61,19 @@ bool MessageStore::store(enum mixpanel_endpoint endpoint, const QString &message
     const QSqlError err = query.lastError();
     if (err.isValid()) {
         unconnect();
-        failed = true;
         return false;
     }
     return true;
 }
 
-bool MessageStore::retrieve(enum mixpanel_endpoint endpoint, QList<QString> &results, int &last_id) {
+bool MessageStore::retrieve(enum mixpanel_endpoint endpoint, QList<QString> *results, int *last_id) {
     QSqlDatabase *db = getConnection();
     if (NULL == db) {
         return false;
     }
     QSqlQuery query(*db);
-    if (! query.prepare(READ_QUERY)) {
+    if (! query.prepare("SELECT _id, message FROM messages_v0 WHERE endpoint = :endpoint")) {
         unconnect();
-        failed = true;
         return false;
     }
     query.bindValue(":endpoint", endpoint);
@@ -90,26 +81,24 @@ bool MessageStore::retrieve(enum mixpanel_endpoint endpoint, QList<QString> &res
     const QSqlError err = query.lastError();
     if (err.isValid()) {
         unconnect();
-        failed = true;
         return false;
     }
-    results.clear();
+    results->clear();
     while (query.next()) {
-        last_id = query.value(0).toInt();
-        results.append(query.value(1).toString());
+        *last_id = query.value(0).toInt();
+        results->append(query.value(1).toString());
     }
     return true;
 }
 
-bool MessageStore::count(enum mixpanel_endpoint endpoint, int &count) {
+bool MessageStore::count(enum mixpanel_endpoint endpoint, int *count) {
     QSqlDatabase *db = getConnection();
     if (NULL == db) {
         return false;
     }
     QSqlQuery query(*db);
-    if (! query.prepare(COUNT_QUERY)) {
+    if (! query.prepare("SELECT COUNT(*) FROM messages_v0 WHERE endpoint = :endpoint")) {
         unconnect();
-        failed = true;
         return false;
     }
     query.bindValue(":endpoint", endpoint);
@@ -117,27 +106,24 @@ bool MessageStore::count(enum mixpanel_endpoint endpoint, int &count) {
     const QSqlError err = query.lastError();
     if (err.isValid()) {
         unconnect();
-        failed = true;
         return false;
     }
     if (! query.next()) {
         unconnect();
-        failed = true;
         return false;
     }
-    count = query.value(0).toInt();
+    *count = query.value(0).toInt(); // TODO what if this fails (because result is a string or something?)
     return true;
 }
 
-bool MessageStore::clearMessagesWithEndpointFromId(enum mixpanel_endpoint endpoint, int id) {
+bool MessageStore::clearMessagesUptoId(enum mixpanel_endpoint endpoint, int id) {
     QSqlDatabase *db = getConnection();
     if (NULL == db) {
         return false;
     }
     QSqlQuery query(*db);
-    if (! query.prepare(CLEAR_BY_ENDPOINT_ID)) {
+    if (! query.prepare("DELETE FROM messages_v0 WHERE _id <= :clear_id AND endpoint = :endpoint")) {
         unconnect();
-        failed = true;
         return false;
     }
     query.bindValue(":endpoint", endpoint);
@@ -146,29 +132,26 @@ bool MessageStore::clearMessagesWithEndpointFromId(enum mixpanel_endpoint endpoi
     const QSqlError err = query.lastError();
     if (err.isValid()) {
         unconnect();
-        failed = true;
         return false;
     }
     return true;
 }
 
-bool MessageStore::clearMessagesFromTime(int time) {
+bool MessageStore::clearMessagesUptoTime(std::time_t time_val) {
     QSqlDatabase *db = getConnection();
     if (NULL == db) {
         return false;
     }
     QSqlQuery query(*db);
-    if (! query.prepare(CLEAR_BY_TIME)) {
+    if (! query.prepare("DELETE FROM messages_v0 WHERE created_at <= :clear_time")) {
         unconnect();
-        failed = true;
         return false;
     }
-    query.bindValue(":clear_time", time);
+    query.bindValue(":clear_time", time_val);
     query.exec();
     const QSqlError err = query.lastError();
     if (err.isValid()) {
         unconnect();
-        failed = true;
         return false;
     }
     return true;
@@ -178,41 +161,31 @@ QSqlDatabase* MessageStore::getConnection() {
     if (m_connection.isOpen()) {
         return &m_connection;
     }
-    if (failed) {
-        return NULL;
-    }
     if (QSqlDatabase::contains(DATABASE_CONNECTION_NAME)){
         std::cerr << "Database is already open: " << m_connection.lastError().text().toUtf8().constData();
-        failed = true;
         return NULL;
     }
-    m_connection = QSqlDatabase::addDatabase(DATABASE_DRIVER, DATABASE_CONNECTION_NAME);
+    m_connection = QSqlDatabase::addDatabase(DATABASE_DRIVER, DATABASE_CONNECTION_NAME); // TODO Check docs, can this fail?
     m_connection.setDatabaseName(DATABASE_PATH);
     if (!m_connection.isValid()) { // Invalid driver
-        failed = true;
         return NULL;
     } else if (!m_connection.open()) {
-        std::cerr << "Could not open connection to database: " << m_connection.lastError().text().toUtf8().constData();
-        failed = true;
         return NULL;
     }
     const QString table_check("SELECT name FROM sqlite_master WHERE type='table' AND name='messages_v0'");
     QSqlQuery table_check_query(table_check, m_connection);
     const QSqlError table_check_err = table_check_query.lastError();
     if (table_check_err.isValid()) {
-        std::cerr << "Error executing table check SQL: " << table_check_err.text().toUtf8().constData();
-        failed = true;
         return NULL;
     } else if (! table_check_query.next()) {
-        initializeDatabase();
-        if (failed) {
+        if (!initializeDatabase() ) {
             return NULL;
         }
     }
     return &m_connection;
 }
 
-void MessageStore::initializeDatabase() {
+bool MessageStore::initializeDatabase() {
     const QString table_create(
             "CREATE TABLE messages_v0 ("
             "   _id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -224,9 +197,7 @@ void MessageStore::initializeDatabase() {
     QSqlQuery table_create_query(table_create, m_connection);
     const QSqlError table_create_err = table_create_query.lastError();
     if (table_create_err.isValid()) {
-        std::cerr << "Error creating table: " << table_create_err.text().toUtf8().constData();
-        failed = true;
-        return;
+        return false;
     }
     const QString time_index_create(
             "CREATE INDEX IF NOT EXISTS time_idx ON messages_v0 (created_at)"
@@ -234,9 +205,7 @@ void MessageStore::initializeDatabase() {
     QSqlQuery time_index_create_query(time_index_create, m_connection);
     const QSqlError time_index_create_err = time_index_create_query.lastError();
     if (time_index_create_err.isValid()) {
-        std::cerr << "Couldn't create time index on mixpanel table: " << time_index_create_err.text().toUtf8().constData();
-        failed = true;
-        return;
+        return false;
     }
     const QString endpoint_index_create(
             "CREATE INDEX IF NOT EXISTS endpoint_idx ON messages_v0 (endpoint)"
@@ -244,10 +213,10 @@ void MessageStore::initializeDatabase() {
     const QSqlQuery endpoint_index_create_query(endpoint_index_create, m_connection);
     const QSqlError endpoint_index_create_err = endpoint_index_create_query.lastError();
     if (endpoint_index_create_err.isValid()) {
-        std::cerr << "Couldn't create endpoint index on mixpanel table: " << time_index_create_err.text().toUtf8().constData();
-        failed = true;
-        return;
+        return false;
     }
+    // TODO need an _id,endpoint compound index (if SQLite supports such things)
+    return true;
 }
 
 } /* namespace details */

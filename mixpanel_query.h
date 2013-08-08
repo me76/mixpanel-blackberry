@@ -17,9 +17,9 @@ int mixpanel_query_init();
 
 /*
  * Called with a completely escaped payload, suitable for POSTing to mixpanel.
- * Thread safe (if init has been called early)
+ * Thread safe (if init has been called early.) Returns 0 on success.
  */
-void mixpanel_query(const char *endpoint_url, const char *request_body);
+int mixpanel_query(const char *endpoint_url, const char *request_body);
 
 /*
  * Must be called to clean up library resources. Not thread safe.

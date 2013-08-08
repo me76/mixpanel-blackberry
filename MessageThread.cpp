@@ -14,59 +14,52 @@ namespace mixpanel {
 namespace details {
 
 MessageThread::MessageThread()
-    : QObject(0) {
-	m_running = false;
-    m_thread = new QThread();
-    m_thread->setObjectName(QString("MixpanelMessageThread_InternalThread"));
-    MessageWorker *worker = new MessageWorker();
+    : QObject(0), m_thread(), m_worker(), m_waiting(), m_running(false), m_running_mutex() {
+    m_thread.setObjectName(QString("MixpanelMessageThread_InternalThread"));
+    m_worker.moveToThread(&m_thread);
     bool ok;
-    // Hook our signals to the worker (for now, within our thread)
-    ok = connect(this, SIGNAL(signalMessage(enum mixpanel_endpoint, QString)), worker, SLOT(message(enum mixpanel_endpoint, QString)));
+    ok = connect(this, SIGNAL(signalMessage(enum mixpanel_endpoint, QString)), &m_worker, SLOT(message(enum mixpanel_endpoint, QString)));
     Q_ASSERT(ok);
-    ok = connect(this, SIGNAL(signalFlush()), worker, SLOT(flush()));
+    ok = connect(this, SIGNAL(signalFlush()), &m_worker, SLOT(flush()));
     Q_ASSERT(ok);
     // Listen on thread.
-    ok = connect(m_thread, SIGNAL(started()), this, SLOT(threadStarted()));
-    Q_ASSERT(ok);
-    ok = connect(m_thread, SIGNAL(finished()), this, SLOT(threadFinished()));
-    Q_ASSERT(ok);
-    ok = connect(m_thread, SIGNAL(finished()), m_thread, SLOT(deleteLater()));
-    Q_ASSERT(ok);
-    ok = connect(m_thread, SIGNAL(finished()), worker, SLOT(deleteLater()));
+    ok = connect(&m_thread, SIGNAL(started()), this, SLOT(threadStarted()));
     Q_ASSERT(ok);
     Q_UNUSED(ok);
-    worker->moveToThread(m_thread);
-    m_thread->start();
+    m_thread.start();
 }
 
 MessageThread::~MessageThread() {}
 
-void MessageThread::message(enum mixpanel_endpoint endpoint, QString message) {
+void MessageThread::message(enum mixpanel_endpoint endpoint, const QString &message) {
     QMutexLocker lock(&m_running_mutex);
-    if (! m_running) {
-        m_waiting.append((struct waiting_message) { endpoint, message });
-    } else {
+    if (m_running) {
         emit signalMessage(endpoint, message);
+    } else {
+        m_waiting.append(std::pair<enum mixpanel_endpoint, QString>(endpoint, message));
     }
 }
 
 void MessageThread::flush() {
-    emit signalFlush();
+    QMutexLocker lock(&m_running_mutex);
+    if (m_running) {
+        emit signalFlush();
+    }
 }
 
 void MessageThread::threadStarted() {
-	QMutexLocker lock(&m_running_mutex);
+    QMutexLocker lock(&m_running_mutex);
     m_running = true;
-    QList<struct waiting_message>::const_iterator i;
-    for(i = m_waiting.constBegin(); i != m_waiting.constEnd(); i++) {
-        emit signalMessage(i->endpoint, i->message);
+    QTimer::singleShot(0, this, SLOT(pushWaiting())); // TODO doesn't work
+}
+
+void MessageThread::pushWaiting() {
+    QList< std::pair<enum mixpanel_endpoint, QString> >::const_iterator i;
+    for(i = m_waiting.constBegin(); i != m_waiting.constEnd(); ++i) {
+        emit signalMessage(i->first, i->second);
     }
     m_waiting.clear();
     flush();
-}
-
-void MessageThread::threadFinished() {
-    std::cerr << "Mixpanel Message Thread Finished\n";
 }
 
 } /* namespace details */
