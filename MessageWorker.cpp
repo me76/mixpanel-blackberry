@@ -53,9 +53,10 @@ void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
     if (retrieved.count() == 0) {
         return;
     }
-    QString json_payload = retrieved.join(",");
-    json_payload.prepend("[");
-    json_payload.append("]");
+    QString json_payload;
+    json_payload = retrieved.join(",");
+    json_payload = json_payload.prepend("[");
+    json_payload = json_payload.append("]");
     const char *endpoint_url;
     switch (endpoint) {
     case MIXPANEL_ENDPOINT_EVENTS: // TODO array index here.
@@ -64,6 +65,8 @@ void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
     case MIXPANEL_ENDPOINT_PEOPLE:
         endpoint_url = PEOPLE_ENDPOINT_URL;
         break;
+    case MIXPANEL_ENDPOINT_UNDEFINED:
+        return; // This means there is a programmer bug.
     }
     if (sendData(endpoint_url, json_payload)) {
         m_store.clearMessagesUptoId(endpoint, last_id);

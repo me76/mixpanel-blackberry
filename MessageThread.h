@@ -19,29 +19,33 @@
 namespace mixpanel {
 namespace details {
 
-class MessageThread: private QObject {
-    Q_OBJECT
+enum task_type {
+    TASK_TYPE_MESSAGE,
+    TASK_TYPE_FLUSH,
+    TASK_TYPE_DIE
+};
+
+class MessageThread: private QThread {
 public:
     MessageThread();
     ~MessageThread();
-
+protected:
+    void run();
 public:
     void message(enum mixpanel_endpoint endpoint, const QString &message);
     void flush();
-signals:
-    void signalMessage(enum mixpanel_endpoint endpoint, const QString &message);
-    void signalFlush();
-private slots:
-    void threadStarted();
-    void pushWaiting();
 private:
     MessageThread(const MessageThread&);
     MessageThread& operator=(const MessageThread&);
-    QThread m_thread;
+    struct task {
+        enum task_type task_type;
+        enum mixpanel_endpoint endpoint;
+        QString message;
+    };
     MessageWorker m_worker;
-    QList< std::pair<enum mixpanel_endpoint, QString> > m_waiting;
-    bool m_running;
-    QMutex m_running_mutex;
+    QQueue<struct task> m_queue;
+    QMutex m_queue_mutex;
+    QWaitCondition m_wait_condition;
 };
 
 } /* namespace details */

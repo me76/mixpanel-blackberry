@@ -14,52 +14,65 @@ namespace mixpanel {
 namespace details {
 
 MessageThread::MessageThread()
-    : QObject(0), m_thread(), m_worker(), m_waiting(), m_running(false), m_running_mutex() {
-    m_thread.setObjectName(QString("MixpanelMessageThread_InternalThread"));
-    m_worker.moveToThread(&m_thread);
-    bool ok;
-    ok = connect(this, SIGNAL(signalMessage(enum mixpanel_endpoint, QString)), &m_worker, SLOT(message(enum mixpanel_endpoint, QString)));
-    Q_ASSERT(ok);
-    ok = connect(this, SIGNAL(signalFlush()), &m_worker, SLOT(flush()));
-    Q_ASSERT(ok);
-    // Listen on thread.
-    ok = connect(&m_thread, SIGNAL(started()), this, SLOT(threadStarted()));
-    Q_ASSERT(ok);
-    Q_UNUSED(ok);
-    m_thread.start();
+    : QThread(), m_worker(), m_queue(), m_queue_mutex() {
+    setObjectName(QString("MixpanelMessageThread_InternalThread"));
+    start();
 }
 
-MessageThread::~MessageThread() {}
+MessageThread::~MessageThread() {
+    static QString empty_string;
+    struct task die_task;
+    die_task.task_type = TASK_TYPE_DIE;
+    die_task.endpoint = MIXPANEL_ENDPOINT_UNDEFINED;
+    die_task.message = empty_string;
+    QMutexLocker lock(&m_queue_mutex);
+    m_queue.append(die_task);
+    m_wait_condition.wakeOne();
+    lock.unlock();
+    this->wait();
+}
 
 void MessageThread::message(enum mixpanel_endpoint endpoint, const QString &message) {
-    QMutexLocker lock(&m_running_mutex);
-    if (m_running) {
-        emit signalMessage(endpoint, message);
-    } else {
-        m_waiting.append(std::pair<enum mixpanel_endpoint, QString>(endpoint, message));
-    }
+    struct task next_task;
+    next_task.task_type = TASK_TYPE_MESSAGE;
+    next_task.endpoint = endpoint;
+    next_task.message = QString(message.data()); // Force deep copy
+    QMutexLocker lock(&m_queue_mutex);
+    m_queue.append(next_task);
+    m_wait_condition.wakeOne();
 }
 
 void MessageThread::flush() {
-    QMutexLocker lock(&m_running_mutex);
-    if (m_running) {
-        emit signalFlush();
-    }
+    static QString empty_string;
+    struct task next_task;
+    next_task.task_type = TASK_TYPE_FLUSH;
+    next_task.endpoint = MIXPANEL_ENDPOINT_UNDEFINED;
+    next_task.message = empty_string;
+    QMutexLocker lock(&m_queue_mutex);
+    m_queue.enqueue(next_task);
+    m_wait_condition.wakeOne();
 }
 
-void MessageThread::threadStarted() {
-    QMutexLocker lock(&m_running_mutex);
-    m_running = true;
-    QTimer::singleShot(0, this, SLOT(pushWaiting())); // TODO doesn't work
-}
-
-void MessageThread::pushWaiting() {
-    QList< std::pair<enum mixpanel_endpoint, QString> >::const_iterator i;
-    for(i = m_waiting.constBegin(); i != m_waiting.constEnd(); ++i) {
-        emit signalMessage(i->first, i->second);
+void MessageThread::run() {
+    struct task next_task;
+    while (TASK_TYPE_DIE != next_task.task_type) {
+        QMutexLocker lock(&m_queue_mutex);
+        while (m_queue.isEmpty()) {
+            m_wait_condition.wait(&m_queue_mutex); // TODO timeout?
+        }
+        next_task = m_queue.dequeue();
+        lock.unlock();
+        switch (next_task.task_type) {
+        case TASK_TYPE_MESSAGE:
+            m_worker.message(next_task.endpoint, next_task.message);
+            break;
+        case TASK_TYPE_FLUSH:
+            m_worker.flush();
+            break;
+        case TASK_TYPE_DIE:
+            return;
+        }
     }
-    m_waiting.clear();
-    flush();
 }
 
 } /* namespace details */
