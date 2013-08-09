@@ -66,7 +66,7 @@ void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
         json_payload = retrieved.join(",");
         json_payload = json_payload.prepend("[");
         json_payload = json_payload.append("]");
-        const char *endpoint_url;
+        const char *endpoint_url = NULL;
         switch (endpoint) {
         case MIXPANEL_ENDPOINT_EVENTS: // TODO array index here.
             endpoint_url = EVENTS_ENDPOINT_URL;
