@@ -7,11 +7,14 @@
 
 #include "MessageThread.h"
 #include <iostream>
+#include <time.h>
 
 #include <QMutexLocker>
 
 namespace mixpanel {
 namespace details {
+
+#define FLUSH_INTERVAL_SECONDS 60
 
 MessageThread::MessageThread()
     : QThread(), m_queue(), m_queue_mutex() {
@@ -57,27 +60,40 @@ void MessageThread::flush() {
 }
 
 void MessageThread::run() {
-	MessageWorker worker;
+    MessageWorker worker;
     struct task next_task;
+    time_t now = time(NULL);
+    time_t last_flush = now;
     for (;;) {
+
         QMutexLocker lock(&m_queue_mutex);
-        while (m_queue.isEmpty()) {
-            m_wait_condition.wait(&m_queue_mutex);
+        for (;;) {
+            if (! m_queue.isEmpty()) break;
+            if (now - last_flush > FLUSH_INTERVAL_SECONDS) break;
+            m_wait_condition.wait(&m_queue_mutex, FLUSH_INTERVAL_SECONDS * 1000);
+            now = time(NULL);
         }
-        next_task = m_queue.dequeue();
+        if (m_queue.isEmpty()) {
+            next_task.task_type = TASK_TYPE_FLUSH;
+            next_task.endpoint = MIXPANEL_ENDPOINT_UNDEFINED;
+        } else {
+            next_task = m_queue.dequeue();
+        }
         lock.unlock();
+
         switch (next_task.task_type) {
         case TASK_TYPE_MESSAGE:
             worker.message(next_task.endpoint, next_task.message);
             break;
         case TASK_TYPE_FLUSH:
             worker.flush();
+            last_flush = time(NULL);
             break;
         case TASK_TYPE_DIE:
             return;
         }
+        now = time(NULL);
 
-        // The event loop hack- we need
     }
 }
 
