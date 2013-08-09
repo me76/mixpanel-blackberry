@@ -23,6 +23,7 @@ using namespace bb::data;
 struct initialization {
     initialization() {
         mixpanel_query_init();
+        details::Preferences::deletePreferences();
     }
     ~initialization() {
         mixpanel_query_cleanup();
@@ -44,7 +45,7 @@ Mixpanel::~Mixpanel() {}
 
 bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     // Must be reentrant
-    QVariantMap default_properties = s_preferences.getSuperProperties();
+    QVariantMap default_properties = s_preferences.getSuperProperties(m_token);
     default_properties["token"] = m_token;
     default_properties["time"] = time(NULL);
     default_properties["mp_lib"] = QString("blackberry");
@@ -74,12 +75,12 @@ void Mixpanel::flush() {
 
 void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value) {
 	// Must be reentrant
-	s_preferences.setSuperProperty(name, value);
+	s_preferences.setSuperProperty(m_token, name, value);
 }
 
 void Mixpanel::identify(const QString &distinct_id) {
 	// Must be reentrant
-	s_preferences.setDistinctId(distinct_id);
+	s_preferences.setDistinctId(m_token, distinct_id);
 }
 
 } // namespace mixpanel

@@ -19,15 +19,14 @@ class Preferences {
 public:
 	Preferences();
 	virtual ~Preferences();
-	QVariantMap getSuperProperties();
-	void setSuperProperty(const QString &name, const QVariant &value);
-	QString getDistinctId();
-	void setDistinctId(const QString &distinct_id);
+	QVariantMap getSuperProperties(const QString &token);
+	void setSuperProperty(const QString &token, const QString &name, const QVariant &value);
+	void setDistinctId(const QString &token, const QString &distinct_id);
+	static bool deletePreferences();
 private:
 	QSettings m_settings;
-	QVariantMap m_superproperties;
-	QString m_distinct_id;
-	QReadWriteLock m_props_lock;
+	QReadWriteLock m_settings_lock;
+	QString m_default_distinct_id;
 };
 
 } /* namespace details */

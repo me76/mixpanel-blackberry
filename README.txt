@@ -5,6 +5,7 @@ To use  this library in your project
 - Add the following to the base .pro file
 
 LIBS += -lbbdata
+LIBS += -lbbdevice
 LIBS += -lcurl
 
 - Drop the "mixpanel" directory into your applications src/ directory
