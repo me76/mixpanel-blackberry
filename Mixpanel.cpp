@@ -50,7 +50,7 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     default_properties["time"] = time(NULL);
     default_properties["mp_lib"] = QString("blackberry");
     default_properties["$lib_version"] = QString(VERSION);
-    default_properties["$os"] = QString("Blackberry QNX");
+    default_properties["$os"] = QString("Blackberry 10+");
     QVariantMap use_properties = properties;
     use_properties.unite(default_properties);
     QVariantMap event;

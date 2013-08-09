@@ -9,17 +9,15 @@
 #define MESSAGEWORKER_H_
 
 #include "MessageStore.h"
-#include <QObject>
+#include <QString>
 
 namespace mixpanel {
 namespace details {
 
-class MessageWorker: public QObject {
-     Q_OBJECT
+class MessageWorker{
 public:
     MessageWorker();
     ~MessageWorker();
-public slots:
     void message(enum mixpanel_endpoint endpoint, const QString &message);
     void flush();
 private:
