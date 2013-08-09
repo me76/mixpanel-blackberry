@@ -1,5 +1,7 @@
 This is the Mixpanel client library for the Blackberry 10 operating system.
 
+USING THE LIBRARY:
+
 To use  this library in your project
 
 - Add the following to the base .pro file
@@ -23,6 +25,8 @@ Then you can instantiate instances of the Mixpanel class and track events with:
 The Mixpanel methods are reentrant - it's safe to have multiple instances of Mixpanel,
 and use each of them from their own thread. It is *not* guaranteed that you can use
 the same instance of Mixpanel from multiple threads safely.
+
+OTHER LIBRARY FUNCTIONS:
 
 registerSuperProperty:
 
