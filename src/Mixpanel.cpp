@@ -13,8 +13,9 @@ extern "C" {
 #include "Mixpanel.h"
 #include <iostream>
 #include <time.h>
-#include <curl/curl.h>
+#include <bps/deviceinfo.h>
 #include <bb/data/JsonDataAccess>
+#include <bb/device/HardwareInfo>
 
 namespace mixpanel {
 
@@ -23,7 +24,6 @@ using namespace bb::data;
 struct initialization {
     initialization() {
         mixpanel_query_init();
-        details::Preferences::deletePreferences();
     }
     ~initialization() {
         mixpanel_query_cleanup();
@@ -38,7 +38,32 @@ details::Preferences Mixpanel::s_preferences;
 const char Mixpanel::VERSION[] = "0.0.4pre";
 
 Mixpanel::Mixpanel(const QString &token)
-   : m_token(token) {
+   : m_token(token), m_auto_props() {
+    QVariantMap autoprops;
+    bb::device::HardwareInfo info;
+    QString val;
+    m_auto_props["token"] = m_token;
+    m_auto_props["mp_lib"] = QString("blackberry");
+    m_auto_props["$lib_version"] = QString(VERSION);
+    m_auto_props["$os"] = QString("Blackberry 10+");
+    m_auto_props["$physical_keyboard_device"] = info.isPhysicalKeyboardDevice();
+    val = info.deviceName();
+    if (! val.isEmpty()) {
+        m_auto_props["$device_name"] = val;
+    }
+    val = info.modelName();
+    if (! val.isEmpty()) {
+        m_auto_props["$model_name"] = val;
+    }
+    val = info.modelNumber();
+    if (! val.isEmpty()) {
+        m_auto_props["$model_number"] = val;
+    }
+    deviceinfo_details_t* data;
+    deviceinfo_get_details(&data);
+    const char* os_version = deviceinfo_details_get_device_os(data);
+    m_auto_props["$os_version"] = QString(os_version);
+    deviceinfo_free_details(&data);
 }
 
 Mixpanel::~Mixpanel() {}
@@ -46,13 +71,10 @@ Mixpanel::~Mixpanel() {}
 bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     // Must be reentrant
     QVariantMap default_properties = s_preferences.getSuperProperties(m_token);
-    default_properties["token"] = m_token;
     default_properties["time"] = time(NULL);
-    default_properties["mp_lib"] = QString("blackberry");
-    default_properties["$lib_version"] = QString(VERSION);
-    default_properties["$os"] = QString("Blackberry 10+");
     QVariantMap use_properties = properties;
     use_properties.unite(default_properties);
+    use_properties.unite(m_auto_props);
     QVariantMap event;
     event["event"] = event_name;
     event["properties"] = use_properties;
@@ -74,13 +96,13 @@ void Mixpanel::flush() {
 }
 
 void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value) {
-	// Must be reentrant
-	s_preferences.setSuperProperty(m_token, name, value);
+    // Must be reentrant
+    s_preferences.setSuperProperty(m_token, name, value);
 }
 
 void Mixpanel::identify(const QString &distinct_id) {
-	// Must be reentrant
-	s_preferences.setDistinctId(m_token, distinct_id);
+    // Must be reentrant
+    s_preferences.setDistinctId(m_token, distinct_id);
 }
 
 } // namespace mixpanel

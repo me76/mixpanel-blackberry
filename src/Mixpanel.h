@@ -33,14 +33,14 @@ namespace mixpanel {
 
 class Mixpanel {
 public:
-	/**
-	 * Create a new instance of the Mixpanel class. token should be your Mixpanel project token
-	 * (You can find your project token in the settings dialog of your Mixpanel project.)
-	 *
-	 * Instances of Mixpanel should be confined to a single thread, but you can use multiple
-	 * instances in your application. Instances with the same token will share the same
-	 * distinct_id (if you call identify()) and the same super properties.
-	 */
+    /**
+     * Create a new instance of the Mixpanel class. token should be your Mixpanel project token
+     * (You can find your project token in the settings dialog of your Mixpanel project.)
+     *
+     * Instances of Mixpanel should be confined to a single thread, but you can use multiple
+     * instances in your application. Instances with the same token will share the same
+     * distinct_id (if you call identify()) and the same super properties.
+     */
     Mixpanel(const QString &token);
     virtual ~Mixpanel();
 
@@ -99,6 +99,7 @@ public:
 private:
     QVariantMap getDefaultProperties();
     const QString m_token;
+    QVariantMap m_auto_props;
     static details::MessageThread s_thread;
     static details::Preferences s_preferences;
 };
