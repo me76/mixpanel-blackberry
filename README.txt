@@ -2,17 +2,57 @@ This is the Mixpanel client library for the Blackberry 10 operating system.
 
 Please see the file LICENSE in this distribution for licensing terms.
 
+USING A BINARY RELEASE:
+
+To use a binary release in your project, visit the releases page
+
+    https://github.com/mixpanel/mixpanel-blackberry/releases
+
+and download the mixpanel-blackberry.zip file associated with your release.
+
+* Unzip the contents of the archive into a "mixpanel" directory associated with your project.
+
+* Add the following to the base .pro file in your project:
+
+    LIBS += -lbbdata
+    LIBS += -lbbdevice
+    LIBS += -lcurl
+    INCLUDEPATH += mixpanel/src
+
+* Add the following to the individual CONFIG sections in your .pro file
+
+    # Add this to your Device-Debug, Device-Release, and other arm target configs
+    LIBS += -L$$quote($$BASEDIR/mixpanel/arm) -lmixpanel
+
+    # Add this to your Simulator-Debug or other simulator target configs
+    LIBS += -L$$quote($$BASEDIR/mixpanel/x86) -lmixpanel
+
+USING THE SOURCES AS AN INDEPENDANT PROJECT:
+
+To use use the mixpanel-blackberry sources directly, visit the releases page
+
+    https://github.com/mixpanel/mixpanel-blackberry/releases
+
+and download the source code archive associated with your release.
+
+* Extract the contents of the archive
+
+* In the Momentics IDE, go to
+
+    "Import" > "General" > "Existing Projects into Workspace"
+
+* Select the extracted directory as the root directory of the project
+
+* Check the "Copy projects into workspace" checkbox
+
+* Add the "mixpanel" project as a project reference in your client project.
+
+* Add the following to the client project pro file:
+
+    LIBS += -lbb -lcurl -lbbdata -lbbdevice
+    INCLUDEPATH += $$quote(../../src)
+
 USING THE LIBRARY:
-
-To use  this library in your project
-
-- Add the following to the base .pro file
-
-LIBS += -lbbdata
-LIBS += -lbbdevice
-LIBS += -lcurl
-
-- Drop the "mixpanel" directory into your applications src/ directory
 
 Then you can instantiate instances of the Mixpanel class and track events with:
 
@@ -26,6 +66,8 @@ Then you can instantiate instances of the Mixpanel class and track events with:
 
     ...
     // Right before the main thread of your app exits
+    // (or inside of a finished() signal handler on your
+    // main application thread)
     mixpanel::Mixpanel::stopTracking()
 
 The Mixpanel methods are reentrant - it's safe to have multiple instances of Mixpanel,
