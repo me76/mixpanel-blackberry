@@ -68,6 +68,10 @@ Mixpanel::Mixpanel(const QString &token)
 
 Mixpanel::~Mixpanel() {}
 
+void Mixpanel::stopTracking() {
+    s_thread.stop();
+}
+
 bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     // Must be reentrant
     QVariantMap default_properties = s_preferences.getSuperProperties(m_token);

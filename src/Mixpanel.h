@@ -93,6 +93,15 @@ public:
     virtual void registerSuperProperty(const QString &name, const QVariant &value);
 
     /**
+     * Clears the Mixpanel library, waits on outstanding tracking calls,
+     * and stops the tracking thread. You should call
+     * this method in the main thread of your application before exit.
+     * You should not call any methods on any Mixpanel instances after calling
+     * stopTracking()
+     */
+    static void stopTracking();
+
+    /**
      * A string that records the Mixpanel library version.
      */
     static const char VERSION[];
