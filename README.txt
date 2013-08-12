@@ -32,6 +32,11 @@ The Mixpanel methods are reentrant - it's safe to have multiple instances of Mix
 and use each of them from their own thread. It is *not* guaranteed that you can use
 the same instance of Mixpanel from multiple threads safely.
 
+Tracker.track takes a QString event name, and a QVariantMap of properties
+to associate with the event. The map should contain only contain types
+that are associated with primitive JSON values, QVariantLists and QVariantMaps;
+otherwise, the values will appear as "null" in Mixpanel.
+
 Callers should call stopTracking() just before the main thread of their application
 exits. stopTracking() will wait for all outstanding tracking calls to complete,
 and stop the internal tracking thread, to insure all data is written to disk or
@@ -45,6 +50,10 @@ You can set persistent properties that will be sent with every user event
 by calling Mixpanel::registerSuperProperty(QString name, QVariant value). The given
 arguments will be saved to persistent storage on the device, and sent with
 every future call to track().
+
+You can remove all previously registered super properties by calling clearSuperProperties().
+clearSuperProperties() takes no arguments, and removes all super properties
+from memory and persistent storage.
 
 identify:
 

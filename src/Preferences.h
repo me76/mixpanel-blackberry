@@ -21,6 +21,7 @@ public:
 	virtual ~Preferences();
 	QVariantMap getSuperProperties(const QString &token);
 	void setSuperProperty(const QString &token, const QString &name, const QVariant &value);
+	void clearSuperProperties(const QString &token);
 	void setDistinctId(const QString &token, const QString &distinct_id);
 	static bool deletePreferences();
 private:

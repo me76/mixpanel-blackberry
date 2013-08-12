@@ -11,7 +11,7 @@
 #include <QUuid>
 #include <QReadLocker>
 #include <QWriteLocker>
-
+#include <bb/data/JsonDataAccess>
 #include <bb/device/HardwareInfo>
 
 namespace mixpanel {
@@ -56,6 +56,13 @@ QVariantMap Preferences::getSuperProperties(const QString &token) {
     ret["distinct_id"] = m_settings.value(MIXPANEL_DISTINCT_ID_KEY, m_default_distinct_id).toString();
     m_settings.endGroup();
     return ret;
+}
+
+void Preferences::clearSuperProperties(const QString &token) {
+	QWriteLocker lock(&m_settings_lock);
+	m_settings.beginGroup(token);
+	m_settings.setValue(MIXPANEL_SUPERPROPERTIES_KEY, QVariantMap());
+	m_settings.endGroup();
 }
 
 void Preferences::setSuperProperty(const QString &token, const QString &name, const QVariant &value) {

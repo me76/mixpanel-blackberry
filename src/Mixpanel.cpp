@@ -19,8 +19,6 @@ extern "C" {
 
 namespace mixpanel {
 
-using namespace bb::data;
-
 struct initialization {
     initialization() {
         mixpanel_query_init();
@@ -82,12 +80,10 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     QVariantMap event;
     event["event"] = event_name;
     event["properties"] = use_properties;
-    JsonDataAccess jda;
+    bb::data::JsonDataAccess jda;
     QString json_buffer;
     jda.saveToBuffer(event, &json_buffer);
     if (jda.hasError()) {
-        const DataAccessError err = jda.error();
-        const QString err_message = err.errorMessage();
         return false;
     }
     s_thread.message(MIXPANEL_ENDPOINT_EVENTS, json_buffer);
@@ -102,6 +98,11 @@ void Mixpanel::flush() {
 void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value) {
     // Must be reentrant
     s_preferences.setSuperProperty(m_token, name, value);
+}
+
+void Mixpanel::clearSuperProperties() {
+	// Must be reentrant
+	s_preferences.clearSuperProperties(m_token);
 }
 
 void Mixpanel::identify(const QString &distinct_id) {
