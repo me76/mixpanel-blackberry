@@ -33,7 +33,7 @@ static initialization init;
 details::MessageThread Mixpanel::s_thread;
 details::Preferences Mixpanel::s_preferences;
 
-const char Mixpanel::VERSION[] = "0.0.5pre";
+const char Mixpanel::VERSION[] = "0.1.1";
 
 Mixpanel::Mixpanel(const QString &token)
    : m_token(token), m_auto_props() {
