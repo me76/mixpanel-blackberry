@@ -1,5 +1,7 @@
 This is the Mixpanel client library for the Blackberry 10 operating system.
 
+Please see the file LICENSE in this distribution for licensing terms.
+
 USING THE LIBRARY:
 
 To use  this library in your project
