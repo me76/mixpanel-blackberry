@@ -20,13 +20,22 @@ Then you can instantiate instances of the Mixpanel class and track events with:
 
     ...
 
-    Mixpanel tracker("YOUR PROJECT TOKEN");
+    mixpanel::Mixpanel tracker("YOUR PROJECT TOKEN");
     QVariantMap event_properties;
     tracker.track("My Event", event_properties);
+
+    ...
+    // Right before the main thread of your app exits
+    mixpanel::Mixpanel::stopTracking()
 
 The Mixpanel methods are reentrant - it's safe to have multiple instances of Mixpanel,
 and use each of them from their own thread. It is *not* guaranteed that you can use
 the same instance of Mixpanel from multiple threads safely.
+
+Callers should call stopTracking() just before the main thread of their application
+exits. stopTracking() will wait for all outstanding tracking calls to complete,
+and stop the internal tracking thread, to insure all data is written to disk or
+sent to Mixpanel servers successfully.
 
 OTHER LIBRARY FUNCTIONS:
 
