@@ -43,7 +43,7 @@ Mixpanel::Mixpanel(const QString &token)
     m_auto_props["token"] = m_token;
     m_auto_props["mp_lib"] = QString("blackberry");
     m_auto_props["$lib_version"] = QString(VERSION);
-    m_auto_props["$os"] = QString("Blackberry 10+");
+    m_auto_props["$os"] = QString("BlackBerry 10+");
     m_auto_props["$physical_keyboard_device"] = info.isPhysicalKeyboardDevice();
     val = info.modelName();
     if (! val.isEmpty()) {
