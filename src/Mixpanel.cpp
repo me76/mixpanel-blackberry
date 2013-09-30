@@ -55,7 +55,7 @@ Mixpanel::Mixpanel(const QString &token)
     }
     deviceinfo_details_t* data;
     deviceinfo_get_details(&data);
-    const char* os_version = deviceinfo_details_get_device_os(data);
+    const char* os_version = deviceinfo_details_get_device_os_version(data);
     m_auto_props["$os_version"] = QString(os_version);
     deviceinfo_free_details(&data);
 }
