@@ -56,6 +56,7 @@ int mixpanel_query(const char *endpoint_url, const char *request_body){
         goto cleanup;
     }
     if ((err = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)) ||
+        (err = curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 20L)) ||
         (err = curl_easy_setopt(curl, CURLOPT_URL, endpoint_url)) ||
         (err = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_body)) ||
         (err = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resultchecker)) ||
