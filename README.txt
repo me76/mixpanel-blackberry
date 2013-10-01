@@ -113,3 +113,10 @@ events being stored by calling Mixpanel::flush(). It is recommended (but not req
 that you call flush() when your application is about to exit- if you don't call flush(),
 events that you tracked will be sent the next time the application is started.
 
+flush_with_timeout:
+
+By default, calling flush() will use a connect timeout of seven seconds- long enough
+to complete a connection under uncertain or high-traffic network conditions, but not
+so long that resources are hung up if the call will never complete. This timeout can
+be adjusted by callers using flush_with_timeout() and providing an argument in seconds.
+
