@@ -73,6 +73,17 @@ public:
     virtual void flush();
 
     /**
+     * Send all events waiting in device persistent storage to Mixpanel.
+     * Differs from flush() in that it takes a connect_timeout argument.
+     * The Mixpanel library will use this argument rather than the default
+     * connect timeout when attempting to send data. Longer timeouts will
+     * work better in uncertain network environments, but shorter timeouts
+     * will ensure the application completes in a timely fashion.
+     */
+    virtual void flush_with_timeout(int connect_timeout);
+
+
+    /**
      * Assign a distinct id to all events sent by this device. The Mixpanel
      * library will automatically assign a distinct id to all of your events,
      * but you can override this automatic id by calling identify(). All events

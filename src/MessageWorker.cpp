@@ -15,10 +15,21 @@ extern "C" {
 #include <iostream>
 #include <ctime>
 
+#include <bps/bps.h>
+#include <bps/netstatus.h>
+
 #define STORE_RECORDS_MAX 40
+#define AUTO_FLUSH_TIMEOUT 7
 
 namespace mixpanel {
 namespace details {
+
+static bool is_network_available() {
+    bool ret;
+    // TODO: move to netstatus_get_info in future releases
+    netstatus_get_availability(&ret);
+    return ret;
+}
 
 // TODO move to endpoints.h
 const char* MessageWorker::EVENTS_ENDPOINT_URL = "https://api.mixpanel.com/track";
@@ -43,16 +54,20 @@ void MessageWorker::message(enum mixpanel_endpoint endpoint, const QString &mess
         return;
     }
     if (count >= STORE_RECORDS_MAX) {
-        flushEndpoint(endpoint);
+        flushEndpoint(endpoint, AUTO_FLUSH_TIMEOUT);
     }
 }
 
-void MessageWorker::flush() {
-    flushEndpoint(MIXPANEL_ENDPOINT_EVENTS);
-    flushEndpoint(MIXPANEL_ENDPOINT_PEOPLE);
+void MessageWorker::flush(int connect_timeout) {
+    flushEndpoint(MIXPANEL_ENDPOINT_EVENTS, connect_timeout);
+    flushEndpoint(MIXPANEL_ENDPOINT_PEOPLE, connect_timeout);
 }
 
-void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
+void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint, int connect_timeout) {
+    if (! is_network_available()) {
+        return;
+    }
+
     QStringList retrieved;
     int last_id = -1;
     do {
@@ -77,21 +92,20 @@ void MessageWorker::flushEndpoint(enum mixpanel_endpoint endpoint) {
         case MIXPANEL_ENDPOINT_UNDEFINED:
             return; // This means there is a programmer bug.
         }
-        if (sendData(endpoint_url, json_payload)) {
+        if (sendData(endpoint_url, json_payload, connect_timeout)) {
             m_store.clearMessagesUptoId(endpoint, last_id);
         }
     } while(retrieved.count() > 0);
 }
 
-bool MessageWorker::sendData(const char *endpoint_url, const QString &json) {
+bool MessageWorker::sendData(const char *endpoint_url, const QString &json, int connect_timeout) {
     // TODO this is super memory intensive...
     QByteArray query_payload = json.toUtf8().toBase64();
     QByteArray query_payload_escaped = QUrl::toPercentEncoding(query_payload);
     QByteArray query_data_array("data=");
     query_data_array.append(query_payload_escaped);
-    return 0 == mixpanel_query(endpoint_url, query_data_array);
+    return 0 == mixpanel_query_with_timeout(endpoint_url, query_data_array, connect_timeout);
 }
 
-}
-
+} /* namespace details */
 } /* namespace mixpanel */

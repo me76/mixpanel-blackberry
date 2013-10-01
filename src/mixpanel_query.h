@@ -18,6 +18,15 @@ int mixpanel_query_init();
 /*
  * Called with a completely escaped payload, suitable for POSTing to mixpanel.
  * Thread safe (if init has been called early.) Returns 0 on success.
+ * connect_timeout should be provided in seconds, or -1 to use the default
+ * libcurl timeout.
+ */
+int mixpanel_query_with_timeout(const char *endpoint_url, const char *request_body, int connect_timeout);
+
+/*
+ * Called with a completely escaped payload, suitable for POSTing to mixpanel.
+ * Thread safe (if init has been called early.) Returns 0 on success.
+ * Always uses the libcurl default connect timeout.
  */
 int mixpanel_query(const char *endpoint_url, const char *request_body);
 

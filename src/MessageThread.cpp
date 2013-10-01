@@ -18,8 +18,7 @@ namespace details {
 
 MessageThread::MessageThread()
     : QThread(),
-      m_flush_task(TASK_TYPE_FLUSH, MIXPANEL_ENDPOINT_UNDEFINED, QString("")),
-      m_die_task(TASK_TYPE_DIE, MIXPANEL_ENDPOINT_UNDEFINED, QString("")),
+      m_die_task(TASK_TYPE_DIE, MIXPANEL_ENDPOINT_UNDEFINED, QString(""), -1),
       m_queue(), m_queue_mutex(), m_dead(false) {
     setObjectName(QString("MixpanelMessageThread_InternalThread"));
     start();
@@ -42,16 +41,17 @@ MessageThread::~MessageThread() {
 // Called from client threads, must be thread-safe
 void MessageThread::message(enum mixpanel_endpoint endpoint, const QString &message) {
     QString message_copy = QString(message.data()); // Force deep copy
-    struct task next_task(TASK_TYPE_MESSAGE, endpoint, message_copy);
+    struct task next_task(TASK_TYPE_MESSAGE, endpoint, message_copy, -1);
     QMutexLocker lock(&m_queue_mutex);
     m_queue.append(next_task);
     m_wait_condition.wakeOne();
 }
 
 // Called from client threads, must be thread-safe
-void MessageThread::flush() {
+void MessageThread::flush(int connect_timeout) {
+	struct task flush_task(TASK_TYPE_FLUSH, MIXPANEL_ENDPOINT_UNDEFINED, QString(""), connect_timeout);
     QMutexLocker lock(&m_queue_mutex);
-    m_queue.enqueue(m_flush_task);
+    m_queue.enqueue(flush_task);
     m_wait_condition.wakeOne();
 }
 
@@ -92,7 +92,7 @@ void MessageThread::run() {
             worker.message(next_task.endpoint, next_task.message);
             break;
         case TASK_TYPE_FLUSH:
-            worker.flush();
+            worker.flush(next_task.intmessage);
             last_flush = time(NULL);
             break;
         case TASK_TYPE_DIE:

@@ -44,7 +44,7 @@ void mixpanel_query_cleanup() {
     curl_global_cleanup();
 }
 
-int mixpanel_query(const char *endpoint_url, const char *request_body){
+int mixpanel_query_with_timeout(const char *endpoint_url, const char *request_body, int connect_timeout){
     CURL *curl;
     CURLcode err;
     struct resultchecker resultchecker;
@@ -56,7 +56,6 @@ int mixpanel_query(const char *endpoint_url, const char *request_body){
         goto cleanup;
     }
     if ((err = curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)) ||
-        (err = curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 20L)) ||
         (err = curl_easy_setopt(curl, CURLOPT_URL, endpoint_url)) ||
         (err = curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_body)) ||
         (err = curl_easy_setopt(curl, CURLOPT_WRITEDATA, &resultchecker)) ||
@@ -64,6 +63,13 @@ int mixpanel_query(const char *endpoint_url, const char *request_body){
         returncode = -1;
         goto cleanup;
     }
+    if (connect_timeout > 0) {
+        if ((err = curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, connect_timeout)) != CURLE_OK) {
+            returncode = -1;
+            goto cleanup;
+        }
+    }
+
     err = curl_easy_perform(curl);
     if (err) {
         returncode = -1;
@@ -75,5 +81,9 @@ cleanup:
         curl_easy_cleanup(curl);
     }
     return returncode;
+}
+
+int mixpanel_query(const char *endpoint_url, const char *request_body){
+	return mixpanel_query_with_timeout(endpoint_url, request_body, -1);
 }
 

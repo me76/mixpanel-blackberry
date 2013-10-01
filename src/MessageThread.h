@@ -33,23 +33,24 @@ protected:
     void run();
 public:
     void message(enum mixpanel_endpoint endpoint, const QString &message);
-    void flush();
+    void flush(int connect_timeout);
     void stop();
 private:
     MessageThread(const MessageThread&);
     MessageThread& operator=(const MessageThread&);
     struct task {
         task() {}
-        task(enum task_type type, enum mixpanel_endpoint endpoint, const QString &message) {
+        task(enum task_type type, enum mixpanel_endpoint endpoint, const QString &message, int intmessage) {
             this->task_type = type;
             this->endpoint = endpoint;
             this->message = message;
+            this->intmessage = intmessage;
         }
         enum task_type task_type;
         enum mixpanel_endpoint endpoint;
         QString message;
+        int intmessage;
     };
-    const task m_flush_task;
     const task m_die_task;
     QQueue<struct task> m_queue;
     QMutex m_queue_mutex;

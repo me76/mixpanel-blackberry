@@ -17,6 +17,8 @@ extern "C" {
 #include <bb/data/JsonDataAccess>
 #include <bb/device/HardwareInfo>
 
+#define FLUSH_DEFAULT_TIMEOUT_SECONDS 7
+
 namespace mixpanel {
 
 struct initialization {
@@ -88,7 +90,12 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
 
 void Mixpanel::flush() {
     // Must be reentrant
-    s_thread.flush();
+    flush_with_timeout(FLUSH_DEFAULT_TIMEOUT_SECONDS);
+}
+
+void Mixpanel::flush_with_timeout(int connect_timeout) {
+    // Must be reentrant
+	s_thread.flush(connect_timeout);
 }
 
 void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value) {

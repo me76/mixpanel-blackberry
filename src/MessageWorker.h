@@ -19,12 +19,12 @@ public:
     MessageWorker();
     ~MessageWorker();
     void message(enum mixpanel_endpoint endpoint, const QString &message);
-    void flush();
+    void flush(int connect_timeout);
 private:
     MessageWorker(const MessageWorker&);
     MessageWorker& operator=(const MessageWorker&);
-    void flushEndpoint(enum mixpanel_endpoint endpoint);
-    bool sendData(const char *endpoint_url, const QString &json);
+    void flushEndpoint(enum mixpanel_endpoint endpoint, int connect_timeout);
+    bool sendData(const char *endpoint_url, const QString &json, int connect_timeout);
     MessageStore m_store;
     static const char* EVENTS_ENDPOINT_URL; // TODO move to endpoints.h
     static const char* PEOPLE_ENDPOINT_URL;
