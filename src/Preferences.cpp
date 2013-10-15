@@ -34,13 +34,7 @@ Preferences::Preferences()
     : m_settings(MIXPANEL_SETTINGS_PATH),
       m_settings_lock() {
     if (! m_settings.contains(MIXPANEL_DEFAULT_ID_KEY)) {
-        bb::device::HardwareInfo info;
-        QString default_id = info.pin();
-        if (default_id.isEmpty()) {
-            default_id = QString("R") + QUuid::createUuid().toString();
-        } else {
-            default_id = default_id.prepend('P');
-        }
+        QString default_id = QString("R") + QUuid::createUuid().toString();
         m_settings.setValue(MIXPANEL_DEFAULT_ID_KEY, default_id);
     }
     m_default_distinct_id = m_settings.value(MIXPANEL_DEFAULT_ID_KEY).toString();
