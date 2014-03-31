@@ -212,7 +212,6 @@ bool MessageStore::initializeDatabase() {
     if (endpoint_index_create_err.isValid()) {
         return false;
     }
-    // TODO need an _id,endpoint compound index (if SQLite supports such things)
     return true;
 }
 

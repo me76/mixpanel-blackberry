@@ -25,16 +25,20 @@ enum task_type {
     TASK_TYPE_DIE
 };
 
-class MessageThread: private QThread {
+class MessageThread: public QThread {
 public:
     MessageThread();
     ~MessageThread();
-protected:
-    void run();
-public:
+
     void message(enum mixpanel_endpoint endpoint, const QString &message);
     void flush(int connect_timeout);
-    void stop();
+    void stopBlocking();
+    void stopNonblocking();
+    int getDepth();
+
+protected:
+    void run();
+
 private:
     MessageThread(const MessageThread&);
     MessageThread& operator=(const MessageThread&);
@@ -55,7 +59,8 @@ private:
     QQueue<struct task> m_queue;
     QMutex m_queue_mutex;
     QWaitCondition m_wait_condition;
-    bool m_dead;
+    bool m_dying;
+    int m_depth;
 };
 
 } /* namespace details */

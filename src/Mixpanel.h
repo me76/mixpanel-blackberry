@@ -11,6 +11,7 @@
 #include "MessageThread.h"
 #include "Preferences.h"
 #include <QVariantMap>
+#include <bb/cascades/Application>
 
 namespace mixpanel {
 
@@ -128,9 +129,19 @@ public:
     static void stopTracking();
 
     /**
+     * Clears the Mixpanel library, waits on outstanding tracking calls,
+     * and calls extendTerminationTimeout on the given Application until
+     * the stop is complete.
+     * You should not call any methods on any Mixpanel instances after calling
+     * stopTracking()
+     */
+    static void stopTrackingInApplication(bb::cascades::Application *app);
+
+    /**
      * A string that records the Mixpanel library version.
      */
     static const char VERSION[];
+
 private:
     QVariantMap getDefaultProperties();
     const QString m_token;

@@ -65,7 +65,28 @@ Mixpanel::Mixpanel(const QString &token)
 Mixpanel::~Mixpanel() {}
 
 void Mixpanel::stopTracking() {
-    s_thread.stop();
+    s_thread.stopBlocking();
+}
+
+void Mixpanel::stopTrackingInApplication(bb::cascades::Application *app) {
+    int tries = 0;
+    int waitMs = 200;
+    int maxWaitMs = 1000 * 5; // 5 second wait
+    int maxTries = maxWaitMs / waitMs;
+
+    QWaitCondition waitCondition;
+    QMutex mutex;
+    QMutexLocker lock(&mutex);
+    s_thread.stopNonblocking();
+    while(tries < maxTries && ! s_thread.isFinished()) {
+        int depth = s_thread.getDepth();
+        qDebug() << "Stopping in Mixpanel Library, Depth " << depth << " Try " << tries;
+        app->extendTerminationTimeout();
+        waitCondition.wait(&mutex, 200);
+        tries = tries + 1;
+    }
+    lock.unlock();
+    s_thread.wait();
 }
 
 bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
@@ -104,8 +125,8 @@ void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value)
 }
 
 void Mixpanel::clearSuperProperties() {
-	// Must be reentrant
-	s_preferences.clearSuperProperties(m_token);
+    // Must be reentrant
+    s_preferences.clearSuperProperties(m_token);
 }
 
 void Mixpanel::identify(const QString &distinct_id) {
