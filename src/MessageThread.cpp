@@ -85,7 +85,7 @@ int MessageThread::getDepth() {
 }
 
 void MessageThread::run() {
-    MessageWorker worker;
+    MessageWorker worker; // TODO HERE'S WHERE IT STARTS.
     struct task next_task;
     time_t now = time(NULL);
     time_t last_flush = now;

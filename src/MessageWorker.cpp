@@ -36,16 +36,12 @@ const char* MessageWorker::EVENTS_ENDPOINT_URL = "https://api.mixpanel.com/track
 const char* MessageWorker::PEOPLE_ENDPOINT_URL = "https://api.mixpanel.com/engage";
 
 MessageWorker::MessageWorker()
-    : m_store() {
-    std::time_t overdue = time(NULL) - (60 * 60 * 24 * 5); // Five days
-    if (overdue > 0) { // account for screwy system clocks
-        m_store.clearMessagesUptoTime(overdue);
-    }
-}
+    : m_store(), m_store_is_prepared(false) {}
 
 MessageWorker::~MessageWorker() {}
 
 void MessageWorker::message(enum mixpanel_endpoint endpoint, const QString &message) {
+    prepareStore();
     if (!m_store.store(endpoint, message)) {
         return;
     }
@@ -59,6 +55,7 @@ void MessageWorker::message(enum mixpanel_endpoint endpoint, const QString &mess
 }
 
 void MessageWorker::flush(int connect_timeout) {
+    prepareStore();
     flushEndpoint(MIXPANEL_ENDPOINT_EVENTS, connect_timeout);
     flushEndpoint(MIXPANEL_ENDPOINT_PEOPLE, connect_timeout);
 }
@@ -105,6 +102,17 @@ bool MessageWorker::sendData(const char *endpoint_url, const QString &json, int 
     QByteArray query_data_array("data=");
     query_data_array.append(query_payload_escaped);
     return 0 == mixpanel_query_with_timeout(endpoint_url, query_data_array, connect_timeout);
+}
+
+
+void MessageWorker::prepareStore() {
+    if (!m_store_is_prepared) {
+        std::time_t overdue = time(NULL) - (60 * 60 * 24 * 5); // Five days
+        if (overdue > 0) { // account for screwy system clocks
+            m_store.clearMessagesUptoTime(overdue);
+        }
+        m_store_is_prepared = true;
+    }
 }
 
 } /* namespace details */

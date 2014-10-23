@@ -73,7 +73,7 @@ bool MessageStore::retrieve(enum mixpanel_endpoint endpoint, int limit, QList<QS
         " ORDER BY _id ASC LIMIT :limit"
     );
     query.bindValue(":endpoint", endpoint);
-    query.bindValue(":limit", limit); // TODO is this going to work?
+    query.bindValue(":limit", limit);
     query.exec();
     const QSqlError err = query.lastError();
     if (err.isValid()) {
