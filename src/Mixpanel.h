@@ -138,6 +138,30 @@ public:
     static void stopTrackingInApplication(bb::cascades::Application *app);
 
     /**
+     * Turns off auto-flush behavior. By default, the Mixpanel library will
+     * automatically attempt to flush contents to it's servers, but if
+     * disableAutoflush is set, it will only flush as the result of some
+     * call to flush on an instance.
+     */
+    static void disableAutoflush();
+
+    /**
+     * Turns on auto-flush behavior, if it has been previously disabled by
+     * a call to disableAutoflush.
+     */
+    static void enableAutoflush();
+
+    /**
+     * Equivalent to calling Mixpanel.flush, but does not require an instance.
+     */
+    static void flush_all();
+
+    /**
+     * Equivalent to calling Mixpanel.flush_with_timeout, but does not require an instance.
+     */
+    static void flush_all_with_timeout(int connect_timeout);
+
+    /**
      * A string that records the Mixpanel library version.
      */
     static const char VERSION[];

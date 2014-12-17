@@ -57,6 +57,24 @@ void MessageThread::flush(int connect_timeout) {
     m_wait_condition.wakeOne();
 }
 
+// Called from client threads, must be thread-safe
+void MessageThread::disableAutoflush() {
+    struct task disable_autoflush_task(TASK_TYPE_DISABLE_AUTOFLUSH, MIXPANEL_ENDPOINT_UNDEFINED, QString(""), 0);
+    QMutexLocker lock(&m_queue_mutex);
+    ++m_depth;
+    m_queue.enqueue(disable_autoflush_task);
+    m_wait_condition.wakeOne();
+}
+
+// Called from client threads, must be thread-safe
+void MessageThread::enableAutoflush() {
+    struct task enable_autoflush_task(TASK_TYPE_ENABLE_AUTOFLUSH, MIXPANEL_ENDPOINT_UNDEFINED, QString(""), 0);
+    QMutexLocker lock(&m_queue_mutex);
+    ++m_depth;
+    m_queue.enqueue(enable_autoflush_task);
+    m_wait_condition.wakeOne();
+}
+
 // Blocks on stop.
 void MessageThread::stopBlocking() {
     QMutexLocker lock(&m_queue_mutex);
@@ -85,10 +103,12 @@ int MessageThread::getDepth() {
 }
 
 void MessageThread::run() {
-    MessageWorker worker; // TODO HERE'S WHERE IT STARTS.
+    MessageWorker worker;
     struct task next_task;
     time_t now = time(NULL);
     time_t last_flush = now;
+    bool autoflush = true;
+
     for (;;) {
         // Locked region
         QMutexLocker lock(&m_queue_mutex);
@@ -99,7 +119,7 @@ void MessageThread::run() {
             now = time(NULL);
         }
         if (m_queue.isEmpty()) {
-            next_task.task_type = TASK_TYPE_FLUSH;
+            next_task.task_type = autoflush ? TASK_TYPE_FLUSH : TASK_TYPE_NONE;
             next_task.endpoint = MIXPANEL_ENDPOINT_UNDEFINED;
         } else {
             next_task = m_queue.dequeue();
@@ -115,6 +135,14 @@ void MessageThread::run() {
         case TASK_TYPE_FLUSH:
             worker.flush(next_task.intmessage);
             last_flush = time(NULL);
+            break;
+        case TASK_TYPE_ENABLE_AUTOFLUSH:
+            autoflush = true;
+            break;
+        case TASK_TYPE_DISABLE_AUTOFLUSH:
+            autoflush = false;
+            break;
+        case TASK_TYPE_NONE:
             break;
         case TASK_TYPE_DIE:
             return;

@@ -22,7 +22,10 @@ namespace details {
 enum task_type {
     TASK_TYPE_MESSAGE,
     TASK_TYPE_FLUSH,
-    TASK_TYPE_DIE
+    TASK_TYPE_ENABLE_AUTOFLUSH,
+    TASK_TYPE_DISABLE_AUTOFLUSH,
+    TASK_TYPE_DIE,
+    TASK_TYPE_NONE
 };
 
 class MessageThread: public QThread {
@@ -32,6 +35,8 @@ public:
 
     void message(enum mixpanel_endpoint endpoint, const QString &message);
     void flush(int connect_timeout);
+    void disableAutoflush();
+    void enableAutoflush();
     void stopBlocking();
     void stopNonblocking();
     int getDepth();

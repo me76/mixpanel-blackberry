@@ -68,6 +68,14 @@ void Mixpanel::stopTracking() {
     s_thread.stopBlocking();
 }
 
+void Mixpanel::enableAutoflush() {
+    s_thread.enableAutoflush();
+}
+
+void Mixpanel::disableAutoflush() {
+    s_thread.disableAutoflush();
+}
+
 void Mixpanel::stopTrackingInApplication(bb::cascades::Application *app) {
     int tries = 0;
     int waitMs = 200;
@@ -82,7 +90,7 @@ void Mixpanel::stopTrackingInApplication(bb::cascades::Application *app) {
         int depth = s_thread.getDepth();
         qDebug() << "Stopping in Mixpanel Library, Depth " << depth << " Try " << tries;
         app->extendTerminationTimeout();
-        waitCondition.wait(&mutex, 200);
+        waitCondition.wait(&mutex, waitMs);
         tries = tries + 1;
     }
     lock.unlock();
@@ -111,12 +119,20 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
 
 void Mixpanel::flush() {
     // Must be reentrant
-    flush_with_timeout(FLUSH_DEFAULT_TIMEOUT_SECONDS);
+    flush_all();
 }
 
 void Mixpanel::flush_with_timeout(int connect_timeout) {
     // Must be reentrant
-	s_thread.flush(connect_timeout);
+	flush_all_with_timeout(connect_timeout);
+}
+
+void Mixpanel::flush_all() {
+    s_thread.flush(FLUSH_DEFAULT_TIMEOUT_SECONDS);
+}
+
+void Mixpanel::flush_all_with_timeout(int connect_timeout) {
+    s_thread.flush(connect_timeout);
 }
 
 void Mixpanel::registerSuperProperty(const QString &name, const QVariant &value) {
