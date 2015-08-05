@@ -114,7 +114,7 @@ void MessageThread::run() {
         QMutexLocker lock(&m_queue_mutex);
         for (;;) {
             if (! m_queue.isEmpty()) break;
-            if (now - last_flush > FLUSH_INTERVAL_SECONDS) break;
+            if (autoflush && now - last_flush > FLUSH_INTERVAL_SECONDS) break;
             m_wait_condition.wait(&m_queue_mutex, FLUSH_INTERVAL_SECONDS * 500);
             now = time(NULL);
         }
