@@ -19,14 +19,20 @@ class Preferences {
 public:
 	Preferences();
 	virtual ~Preferences();
-	QVariantMap getSuperProperties(const QString &token);
+
+	QVariantMap getSuperProperties(const QString &token) const;
 	void setSuperProperty(const QString &token, const QString &name, const QVariant &value);
 	void clearSuperProperties(const QString &token);
+
 	void setDistinctId(const QString &token, const QString &distinct_id);
+	QString getDistinctId(const QString &token) const;
+
 	static bool deletePreferences();
+
 private:
+	mutable QReadWriteLock m_settings_lock;
+
 	QSettings m_settings;
-	QReadWriteLock m_settings_lock;
 	QString m_default_distinct_id;
 };
 

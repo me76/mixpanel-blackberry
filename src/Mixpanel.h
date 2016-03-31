@@ -34,6 +34,15 @@ namespace mixpanel {
 
 class Mixpanel {
 public:
+    enum UpdateProfileOperation {
+        Add,
+        Append,
+        Merge,
+        Set,
+        SetOnce
+    };
+
+public:
     /**
      * Create a new instance of the Mixpanel class. token should be your Mixpanel project token
      * (You can find your project token in the settings dialog of your Mixpanel project.)
@@ -61,6 +70,16 @@ public:
      * previous call to identify()
      */
     virtual bool track(const QString &event_name, const QVariantMap &properties);
+
+    ///@{
+    /**
+     * Managing user profiles in Mixpanel. There are higher-level wrappers around engage(const QString&, const QVariantMap&).
+     */
+    bool setupUserProfile(UpdateProfileOperation operation, const QVariantMap& properties);
+    bool dropProfileProperty(const QString& propertyName);
+    bool dropProfileProperties(const QStringList& propertyNames);
+    bool dropUserProfile();
+    ///@}
 
     /**
      * Send all events waiting in device persistent storage to Mixpanel.
@@ -165,6 +184,15 @@ public:
      * A string that records the Mixpanel library version.
      */
     static const char VERSION[];
+
+protected:
+    /**
+     * Add, alter and delete user profile in Mixpanel.
+     *
+     * \p operation is one of: "$set", "$set_once", "$add", "$append", "$union", "$unset", and "$delete".
+     *  Please refer to track(const QString&, const QVariantMap&) for rules for \p properties.
+     */
+    virtual bool engage(const QString& operation, const QVariant& properties);
 
 private:
     QVariantMap getDefaultProperties();

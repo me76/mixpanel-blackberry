@@ -31,8 +31,8 @@ bool Preferences::deletePreferences() {
 }
 
 Preferences::Preferences()
-    : m_settings(MIXPANEL_SETTINGS_PATH),
-      m_settings_lock() {
+    : m_settings_lock(),
+      m_settings(MIXPANEL_SETTINGS_PATH) {
     if (! m_settings.contains(MIXPANEL_DEFAULT_ID_KEY)) {
         QString default_id = QString("R") + QUuid::createUuid().toString();
         m_settings.setValue(MIXPANEL_DEFAULT_ID_KEY, default_id);
@@ -42,13 +42,14 @@ Preferences::Preferences()
 
 Preferences::~Preferences() {}
 
-QVariantMap Preferences::getSuperProperties(const QString &token) {
+QVariantMap Preferences::getSuperProperties(const QString &token) const {
     // Must be thread safe
     QReadLocker lock(&m_settings_lock);
-    m_settings.beginGroup(token);
-    QVariantMap ret = m_settings.value(MIXPANEL_SUPERPROPERTIES_KEY).toMap();
-    ret["distinct_id"] = m_settings.value(MIXPANEL_DISTINCT_ID_KEY, m_default_distinct_id).toString();
-    m_settings.endGroup();
+
+    const QString tokenGroup(token + '/');
+    QVariantMap ret = m_settings.value(tokenGroup + MIXPANEL_SUPERPROPERTIES_KEY).toMap();
+    ret["distinct_id"] = m_settings.value(tokenGroup + MIXPANEL_DISTINCT_ID_KEY, m_default_distinct_id).toString();
+
     return ret;
 }
 
@@ -75,6 +76,13 @@ void Preferences::setDistinctId(const QString &token, const QString &distinct_id
     m_settings.beginGroup(token);
     m_settings.setValue(MIXPANEL_DISTINCT_ID_KEY, distinct_id);
     m_settings.endGroup();
+}
+
+QString Preferences::getDistinctId(const QString &token) const {
+    // Must be thread safe
+    QWriteLocker lock(&m_settings_lock);
+
+    return m_settings.value(token + '/' + MIXPANEL_DISTINCT_ID_KEY).toString();
 }
 
 } /* namespace details */

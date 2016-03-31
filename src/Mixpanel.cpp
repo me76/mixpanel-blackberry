@@ -117,6 +117,63 @@ bool Mixpanel::track(const QString &event_name, const QVariantMap &properties) {
     return true;
 }
 
+bool Mixpanel::setupUserProfile(UpdateProfileOperation operation, const QVariantMap& properties) {
+    switch(operation) {
+        case Add:
+            return engage("$add", properties);
+        break;
+        case Append:
+            return engage("$append", properties);
+        break;
+        case Merge:
+            return engage("$union", properties);
+        break;
+        case Set:
+            return engage("$set", properties);
+        break;
+        case SetOnce:
+            return engage("$set_once", properties);
+        break;
+        default:
+            return false;
+    }
+}
+
+bool Mixpanel::dropProfileProperty(const QString& propertyName) {
+    return dropProfileProperties(QStringList(propertyName));
+}
+
+bool Mixpanel::dropProfileProperties(const QStringList& propertyNames) {
+    return engage("$unset", propertyNames);
+}
+
+bool Mixpanel::dropUserProfile() {
+    return engage("$delete", QVariant());
+}
+
+bool Mixpanel::engage(const QString& operation, const QVariant& properties) {
+    // Must be reentrant
+    QVariantMap engage_data;
+    engage_data["$token"] = m_token;
+    engage_data["$distinct_id"] = s_preferences.getDistinctId(m_token);
+
+    if("$set" == operation || "$set_once" == operation) {
+        engage_data["$created"] = QDateTime::currentDateTimeUtc().toString("YYYY-MM-DDThh:mm:ss");
+    }
+
+    engage_data[operation] = properties;
+
+    bb::data::JsonDataAccess jda;
+    QString json_buffer;
+    jda.saveToBuffer(engage_data, &json_buffer);
+    if(jda.hasError()) {
+        return false;
+    }
+
+    s_thread.message(MIXPANEL_ENDPOINT_PEOPLE, json_buffer);
+    return true;
+}
+
 void Mixpanel::flush() {
     // Must be reentrant
     flush_all();
