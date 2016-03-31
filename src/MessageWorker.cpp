@@ -21,15 +21,24 @@ extern "C" {
 #define STORE_RECORDS_MAX 40
 #define AUTO_FLUSH_TIMEOUT 7
 
+namespace {
+
+bool is_network_available() {
+	bool isOnline = false;
+
+    netstatus_info_t* networkStatus = 0;
+    if(netstatus_get_info(&networkStatus) == BPS_SUCCESS) {
+        isOnline = networkStatus && netstatus_info_get_availability(networkStatus);
+        netstatus_free_info(&networkStatus);
+    }
+
+    return isOnline;
+}
+
+} //local namespace
+
 namespace mixpanel {
 namespace details {
-
-static bool is_network_available() {
-    bool ret;
-    // TODO: move to netstatus_get_info in future releases
-    netstatus_get_availability(&ret);
-    return ret;
-}
 
 // TODO move to endpoints.h
 const char* MessageWorker::EVENTS_ENDPOINT_URL = "https://api.mixpanel.com/track";
